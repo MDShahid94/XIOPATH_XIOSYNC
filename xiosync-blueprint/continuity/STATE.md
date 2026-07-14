@@ -6,12 +6,13 @@
 > not match the newest entry in `HANDOFF-LOG.md`, treat the log as truth and
 > repair this file first.
 
-- **Last updated:** Session 017 — 2026-07-15
+- **Last updated:** Session 018 — 2026-07-15
 - **Repo (canonical, D-020):** `MDShahid94/XIOSYNC_V0` (GitHub; default
-  branch `main`; remote `shahid`; managed via `GITHUB_FINE_GRAINED_PAT`).
-  The v0-connected repo (`origin`, currently
-  `chainaanantapurasha-rgb/XIO_SYNC_V0`) is a working mirror that churns
-  with operator credit-cycles — push every step to both, canonical last.
+  branch `main`; managed via `GITHUB_FINE_GRAINED_PAT`). Remote names
+  churn with workspace duplication — as of Session 018 there is NO usable
+  named remote (`origin` is a v0 bundle URL); push with the full canonical
+  URL inline. If a mirror repo is configured in your workspace, push every
+  step to both, canonical last.
   Pushing needs the PAT, and in a fresh sandbox shell
   `GITHUB_FINE_GRAINED_PAT` is EMPTY until sourced (it lives in the
   gitignored `.env.development.local`) — an unsourced push fails with
@@ -32,7 +33,7 @@
 | Continuity plane (this system: AGENTS.md, STATE, HANDOFF-LOG, SESSION-PROTOCOL) | ✅ Complete (Session 002) |
 | Phase R — Rebuild-readiness deep research (doc 10) | ✅ Complete (Session 003 — D-013..D-018) |
 | **Phase 0 — Foundation & guardrails** | ✅ **Complete (Session 015).** Exit gate closed on canonical repo `MDShahid94/XIOSYNC_V0`: CI green on `main` — **run `29368647653`, SHA `a14e791`, event push, conclusion success** (jobs lint-type-arch / unit / migration-chain); branch protection on `main` requires all three (strict) per D-016; Gate 10 scanner = GitHub-native secret scanning + push protection, enabled (D-020). Prior PR-proof on the mirror: run `29367288883`, SHA `1f84669` |
-| **Phase 1 — Domain ontology (doc 03)** | 🔜 Open — next up |
+| **Phase 1 — Identity, tenancy & authorization spine** | 🟡 In progress. **Slice 1 (five identity tables) ✅ Complete (Session 018):** ORM models + Alembic revision 0002 (RLS per doc 05 §3.2 + IMM triggers per doc 06 §4) + drift/RLS/immutability integration tests. PR #2 squash-merged into `main` @ `87e0086`; GitHub CI run `29373985898` success (lint-type-arch / unit / migration-chain, postgres:17). Remaining slices: OrgContext (C1), sessions (C8), authority axes (H4/H8), `authorize(...)` (C3) |
 | Phases 2–7 | 🔲 Blocked (sequential, gated) |
 
 **No XIOSYNC implementation code exists yet.** The `app/` directory is the v0
@@ -40,34 +41,33 @@ sandbox scaffold, not XIOSYNC; per D-015 it is deleted when Phase 0 begins.
 
 ## The exact next action
 
-Begin **Phase 1 — Identity, tenancy & the authorization spine** (doc 10
-Phase 1; docs 03, 05, 06). Phase 0 is closed — do not revisit it.
+Continue **Phase 1 — Identity, tenancy & the authorization spine** (doc 10
+Phase 1; docs 03, 05, 06). Slice 1 (identity tables) is merged — do not
+revisit it.
 
 1. Boot per SESSION-PROTOCOL §1 (sentinel set/guard; if freshly duplicated
    workspace, §7 drill first — verify `git ls-files xiosync/` shows the
    namespace symlinks and `uv run python -c "import
-   xiosync.platform.clock"` works; verify remote `shahid` exists and
-   points at the canonical repo per D-020).
-2. First Phase 1 slice — **in progress on branch `phase1/identity-tables`**
-   (CHECKPOINT.md holds the step plan; cursor at step 3). Steps 1–2 are
-   done and proven (Session 017): the five identity tables —
-   `organizations`, `auth_identities`, `memberships`, `sessions`,
-   `actors` — exist as ORM models in `persistence/models/` with
-   `target_metadata` wired in `persistence/migrations/env.py`
-   (INV-TEST-SCHEMA-2 drift half). Remaining: Alembic revision 0002 with
-   immutable `organization_id` (C2) and RLS policies (doc 05 §3.2)
-   passing the migration-chain harness; drift + RLS integration tests;
-   PR into protected canonical `main`.
-3. Then, in later slices: OrgContext middleware (C1), session lifecycle
-   (C8), authority axes (H4/H8), single `authorize(...)` decision point
-   (C3). Exit gate = the security-negative suite (doc 05 §8, doc 11).
+   xiosync.platform.clock"` works; check `git remote -v` — a v0 bundle
+   `origin` is unusable, push with the canonical URL inline per the Repo
+   header above). Integration tests need a local Postgres: install
+   postgresql16-server, `initdb -U postgres --auth=trust` at
+   `/tmp/pgdata`, `pg_ctl start`, create db `xiosync`, and ensure
+   `DATABASE_URL=postgresql+psycopg://postgres@localhost:5432/xiosync`
+   is in `.env.development.local` (on its own line).
+2. Next Phase 1 slice — **OrgContext middleware (C1) + session lifecycle
+   (C8)** per docs 05 §2/§4 and 04 §2/§6: derive OrgContext from the
+   authenticated session, set `app.current_org` per-transaction at the
+   persistence boundary (the RLS GUC the 0002 policies key on), session
+   issuance/rotation/revocation. Work on a feature branch off `main`
+   @ `87e0086`; write the CHECKPOINT step plan before the first edit.
+3. Then: authority axes (H4/H8) and the single `authorize(...)` decision
+   point (C3). Exit gate = the security-negative suite (doc 05 §8, doc 11).
 4. Before writing app-facing code, resolve D-015's note that the v0
    sandbox `app/` scaffold is deleted when implementation begins — check
    D-015's exact wording and comply.
-5. Push every step commit to **both** remotes (mirror `origin`, canonical
-   `shahid` — see the auth-header trick in the Repo header above).
-   Canonical `main` is branch-protected: work on a feature branch and PR
-   into `main`; never force-push canonical `main`.
+5. Canonical `main` is branch-protected: feature branch + PR + GitHub CI
+   green (D-016/D-017) + squash-merge; never force-push canonical `main`.
 
 No structural questions remain open — do not improvise a stack or layout
 choice; everything is in D-013..D-020.
