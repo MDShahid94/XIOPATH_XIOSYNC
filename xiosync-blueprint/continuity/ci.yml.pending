@@ -1,0 +1,99 @@
+# XIOSYNC CI — doc 09 §7 blocking gates (Phase 0 skeleton, D-016/D-017)
+#
+# Gates active in Phase 0: 1 (lint/type/arch), 2 (migration chain), 3 (unit).
+# Gates 4–10 activate in later phases as their subjects come into existence;
+# they are listed as commented stubs below — never fake-green jobs (INV-CI-1;
+# green compile alone is never sufficient, doc 01 §4.6).
+#
+# All jobs are blocking: configure branch protection to require every job in
+# this file once the repo is connected to GitHub (D-016 precondition).
+
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  UV_VERSION: "0.9.22"
+
+jobs:
+  # Gate 1 — lint, strict types, architecture rules (doc 04 §7)
+  lint-type-arch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: ${{ env.UV_VERSION }}
+      - name: ruff (lint + format check)
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+      - name: mypy --strict
+        run: uv run mypy --strict platform tests tools persistence
+      - name: import-linter (architecture rules)
+        run: uv run lint-imports
+
+  # Gate 3 — unit tests (domain invariants, no infrastructure)
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: ${{ env.UV_VERSION }}
+      - name: pytest (unit + tools)
+        run: uv run pytest tests/unit tests/tools -q
+
+  # Gate 2 — migration chain from an EMPTY database:
+  # upgrade → downgrade → upgrade clean; single head enforced (INV-MIG-2/3).
+  # Fresh postgres:17 service container per job (D-016); tests connect only
+  # via DATABASE_URL (C6). The autogenerate-drift check joins this job when
+  # ORM models exist (Phase 1+; target_metadata is currently None).
+  migration-chain:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: xiosync
+          POSTGRES_PASSWORD: xiosync
+          POSTGRES_DB: xiosync_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U xiosync -d xiosync_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://xiosync:xiosync@localhost:5432/xiosync_ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: ${{ env.UV_VERSION }}
+      - name: pytest (integration — migration round-trip)
+        run: uv run pytest tests/integration -q
+
+  # ---------------------------------------------------------------------
+  # Later-phase gates (doc 09 §7) — activate when their subjects exist:
+  #
+  #   Gate 4  — integration: services against a MIGRATED Postgres
+  #             (extends the migration-chain job; Phase 1+)
+  #   Gate 5  — security-negative suite (doc 05 §8; Phase 2+)
+  #   Gate 6  — contract: OpenAPI diff + regenerated frontend client
+  #             (Phase 3+)
+  #   Gate 7  — frontend: component tests, axe a11y, Web Vitals budgets
+  #             (doc 08 §7/§8; Phase 5+)
+  #   Gate 8  — container smoke: image build + migration job + /ready
+  #             against ephemeral Postgres/Redis (Phase 4+)
+  #   Gate 9  — coverage threshold on domain/, services/, security suite
+  #             (Phase 1+)
+  #   Gate 10 — secret scan over diff and history (Phase 0 follow-up:
+  #             pick scanner when GitHub is connected so the scan can run
+  #             on real push events)
+  # ---------------------------------------------------------------------
+

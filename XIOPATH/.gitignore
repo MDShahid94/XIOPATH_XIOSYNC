@@ -1,0 +1,65 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Environments
+.env
+.env.*
+!.env.example
+.venv
+env/
+venv/
+ENV/
+
+# Database
+*.sqlite3
+*.db
+agent_memory.db
+test_gc.db
+
+# Vector DB (Chroma)
+vector_db/
+data/
+
+# Encryption Keys (NEVER commit)
+*.vault_key
+*.vault_key.bak
+data/.vault_key
+
+# Sensitive data (NEVER commit)
+data/secrets.json
+data/api_keys.json
+data/exports/
+data/dlq/
+
+# Credentials Vault (NEVER commit)
+.credentials/
+**/AllMailsInfo.csv
+
+# Logs & Traces
+*.log
+data/traces/
+data/recordings/
+data/action_screenshots/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Artifacts
+archives/
+test_user_data/
+XIO_VERSE/
+external refs/
+
+# Security
+.secrets.baseline
+
+# Node
+node_modules/
+dist/
+

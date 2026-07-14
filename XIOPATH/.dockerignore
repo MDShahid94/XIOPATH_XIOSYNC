@@ -1,0 +1,58 @@
+# Docker build context exclusions (Phase P.1)
+# Reduces image size and build time by excluding unnecessary files
+
+# Version control
+.git
+.gitignore
+.github
+
+# Python
+.venv
+__pycache__
+*.py[cod]
+*.egg-info
+.pytest_cache
+
+# Data & databases (mounted as volumes)
+data/
+vector_db/
+*.db
+*.sqlite3
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+*.vault_key
+.credentials/
+
+# Documentation & artifacts
+Agent_Artifacts/
+External Referances/
+archives/
+README.md
+MASTER_ROADMAP.md
+
+# Tests (not needed in production image)
+tests/
+
+# Kubernetes manifests
+k8s/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Frontend (separate build)
+frontend/
+frontend_extension/
+node_modules/
+dist/
+
+# Misc
+*.log
+*.md
+!requirements.txt
+scripts/load_test.py

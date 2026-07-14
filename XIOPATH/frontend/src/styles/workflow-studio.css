@@ -1,0 +1,628 @@
+/*
+ * XIOPATH — Workflow Studio CSS
+ * ===============================
+ * Dedicated styles for the visual DAG workflow editor.
+ * Custom node shapes, canvas toolbar, inspector panel.
+ */
+
+/* ─── Studio Layout ───────────────────────────────────────── */
+
+.wfs-layout {
+  display: flex;
+  height: 100%;
+  width: 100%;
+}
+
+/* ─── Sidebar (Left - Workflows List) ─────────────────────── */
+
+.wfs-sidebar {
+  width: 272px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--xp-border-default);
+  background: var(--xp-bg-surface);
+  display: flex;
+  flex-direction: column;
+}
+
+.wfs-sidebar-header {
+  padding: var(--xp-space-4);
+  border-bottom: 1px solid var(--xp-border-subtle);
+}
+
+.wfs-sidebar-title {
+  margin: 0 0 var(--xp-space-3);
+  font-size: var(--xp-text-lg);
+  font-family: var(--xp-font-display);
+  font-weight: var(--xp-weight-bold);
+  color: var(--xp-text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--xp-space-2);
+}
+
+.wfs-sidebar-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--xp-space-3);
+}
+
+.wfs-sidebar-label {
+  font-size: var(--xp-text-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--xp-tracking-wider);
+  color: var(--xp-text-muted);
+  font-weight: var(--xp-weight-medium);
+  margin-bottom: var(--xp-space-2);
+}
+
+/* ─── Workflow List Item ──────────────────────────────────── */
+
+.wfs-wf-item {
+  padding: 10px 12px;
+  border-radius: var(--xp-radius-md);
+  cursor: pointer;
+  border: 1px solid transparent;
+  margin-bottom: 4px;
+  transition: all 200ms var(--xp-ease-default);
+  display: flex;
+  align-items: center;
+  gap: var(--xp-space-2);
+}
+
+.wfs-wf-item:hover {
+  background: var(--xp-bg-elevated);
+}
+
+.wfs-wf-item.active {
+  background: var(--xp-bg-elevated);
+  border-color: var(--xp-cyan);
+}
+
+.wfs-wf-item-name {
+  font-size: var(--xp-text-sm);
+  color: var(--xp-text-primary);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.wfs-wf-item.active .wfs-wf-item-name {
+  color: var(--xp-cyan);
+}
+
+.wfs-wf-item-id {
+  font-size: 10px;
+  color: var(--xp-text-muted);
+  font-family: var(--xp-font-mono);
+}
+
+.wfs-wf-item-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.wfs-wf-item:hover .wfs-wf-item-actions {
+  opacity: 1;
+}
+
+/* ─── Canvas Area ─────────────────────────────────────────── */
+
+.wfs-canvas {
+  flex: 1;
+  position: relative;
+  background: var(--xp-bg-void);
+}
+
+.wfs-canvas-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--xp-text-muted);
+  flex-direction: column;
+  gap: var(--xp-space-4);
+}
+
+.wfs-canvas-empty-icon {
+  opacity: 0.15;
+  animation: xp-float 4s ease-in-out infinite;
+}
+
+.wfs-canvas-empty-text {
+  font-size: var(--xp-text-lg);
+  font-weight: var(--xp-weight-light);
+}
+
+/* ─── Canvas Toolbar (floating) ───────────────────────────── */
+
+.wfs-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--xp-space-2);
+  padding: 6px 12px;
+  background: var(--xp-bg-surface);
+  border: 1px solid var(--xp-border-default);
+  border-radius: var(--xp-radius-full);
+  box-shadow: var(--xp-shadow-lg);
+}
+
+.wfs-toolbar-name {
+  background: transparent;
+  border: none;
+  color: var(--xp-text-primary);
+  font-size: var(--xp-text-md);
+  font-weight: var(--xp-weight-semibold);
+  font-family: var(--xp-font-display);
+  outline: none;
+  width: 200px;
+  padding: 2px 4px;
+  border-radius: var(--xp-radius-sm);
+  transition: background 150ms ease;
+}
+
+.wfs-toolbar-name:focus {
+  background: var(--xp-bg-base);
+}
+
+.wfs-toolbar-sep {
+  width: 1px;
+  height: 20px;
+  background: var(--xp-border-strong);
+  flex-shrink: 0;
+}
+
+.wfs-toolbar-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  background: none;
+  border: none;
+  color: var(--xp-text-secondary);
+  font-size: var(--xp-text-xs);
+  font-weight: var(--xp-weight-medium);
+  cursor: pointer;
+  border-radius: var(--xp-radius-sm);
+  transition: all 150ms ease;
+  white-space: nowrap;
+}
+
+.wfs-toolbar-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--xp-text-primary);
+}
+
+.wfs-toolbar-btn.primary {
+  color: var(--xp-cyan);
+}
+
+.wfs-toolbar-btn.primary:hover {
+  background: var(--xp-cyan-muted);
+}
+
+.wfs-toolbar-btn.danger {
+  color: var(--xp-danger);
+}
+
+.wfs-toolbar-btn.danger:hover {
+  background: var(--xp-danger-bg);
+}
+
+.wfs-toolbar-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ─── Status Badge ────────────────────────────────────────── */
+
+.wfs-status {
+  font-size: 10px;
+  font-weight: var(--xp-weight-semibold);
+  padding: 3px 8px;
+  border-radius: var(--xp-radius-full);
+  text-transform: uppercase;
+  letter-spacing: var(--xp-tracking-wider);
+}
+
+.wfs-status-draft {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--xp-text-secondary);
+}
+
+.wfs-status-active {
+  background: var(--xp-success-bg);
+  color: var(--xp-success);
+}
+
+.wfs-status-archived {
+  background: var(--xp-warning-bg);
+  color: var(--xp-warning);
+}
+
+/* ─── Node Library (Right Sidebar) ────────────────────────── */
+
+.wfs-library {
+  width: 280px;
+  flex-shrink: 0;
+  border-left: 1px solid var(--xp-border-default);
+  background: var(--xp-bg-surface);
+  display: flex;
+  flex-direction: column;
+}
+
+.wfs-library-header {
+  padding: var(--xp-space-4);
+  border-bottom: 1px solid var(--xp-border-subtle);
+}
+
+.wfs-library-title {
+  margin: 0;
+  font-size: var(--xp-text-base);
+  color: var(--xp-text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--xp-space-2);
+}
+
+.wfs-library-search {
+  margin-top: var(--xp-space-3);
+  position: relative;
+}
+
+.wfs-library-search input {
+  width: 100%;
+  padding: 7px 10px 7px 30px;
+  font-size: var(--xp-text-xs);
+  background: var(--xp-bg-base);
+  border: 1px solid var(--xp-border-subtle);
+  border-radius: var(--xp-radius-md);
+  color: var(--xp-text-primary);
+  outline: none;
+  transition: border-color 150ms ease;
+}
+
+.wfs-library-search input:focus {
+  border-color: var(--xp-cyan);
+}
+
+.wfs-library-search-icon {
+  position: absolute;
+  left: 9px;
+  top: 8px;
+  color: var(--xp-text-muted);
+}
+
+.wfs-library-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--xp-space-3);
+}
+
+/* ─── Library Category ────────────────────────────────────── */
+
+.wfs-lib-category {
+  margin-bottom: var(--xp-space-4);
+}
+
+.wfs-lib-cat-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: var(--xp-space-2);
+  padding: 4px 0;
+}
+
+.wfs-lib-cat-icon {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--xp-radius-sm);
+  flex-shrink: 0;
+}
+
+.wfs-lib-cat-label {
+  font-size: var(--xp-text-xs);
+  font-weight: var(--xp-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--xp-tracking-wider);
+  color: var(--xp-text-muted);
+}
+
+/* ─── Library Node Item ───────────────────────────────────── */
+
+.wfs-lib-node {
+  padding: 8px 10px;
+  background: var(--xp-bg-base);
+  border: 1px solid var(--xp-border-subtle);
+  border-radius: var(--xp-radius-md);
+  cursor: grab;
+  transition: all 200ms var(--xp-ease-default);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+  user-select: none;
+}
+
+.wfs-lib-node:hover {
+  background: var(--xp-bg-elevated);
+  border-color: var(--xp-border-strong);
+  transform: translateX(2px);
+}
+
+.wfs-lib-node:active {
+  cursor: grabbing;
+  transform: scale(0.98);
+}
+
+.wfs-lib-node-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--xp-radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.wfs-lib-node-label {
+  font-size: var(--xp-text-sm);
+  color: var(--xp-text-primary);
+  font-weight: var(--xp-weight-medium);
+}
+
+.wfs-lib-node-type {
+  font-size: 10px;
+  color: var(--xp-text-muted);
+  font-family: var(--xp-font-mono);
+}
+
+/* ─── Custom ReactFlow Nodes ──────────────────────────────── */
+
+.wfs-node {
+  padding: 12px 16px;
+  min-width: 220px;
+  border-radius: var(--xp-radius-lg);
+  transition: all 200ms var(--xp-ease-default);
+  position: relative;
+}
+
+.wfs-node-action {
+  background: var(--xp-bg-surface);
+  border: 1px solid var(--xp-border-default);
+}
+
+.wfs-node-action.selected {
+  border-color: var(--xp-cyan);
+  box-shadow: var(--xp-shadow-glow-cyan);
+}
+
+.wfs-node-logic {
+  background: var(--xp-bg-surface);
+  border: 2px dashed var(--xp-warning);
+  border-radius: var(--xp-radius-lg);
+}
+
+.wfs-node-logic.selected {
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.2);
+}
+
+.wfs-node-flow {
+  background: var(--xp-bg-surface);
+  border: 1px solid var(--xp-purple);
+}
+
+.wfs-node-flow.selected {
+  box-shadow: var(--xp-shadow-glow-purple);
+}
+
+.wfs-node-trigger {
+  background: linear-gradient(135deg, rgba(6, 214, 160, 0.08), rgba(6, 214, 160, 0.02));
+  border: 1px solid var(--xp-success);
+  border-radius: var(--xp-radius-2xl);
+}
+
+.wfs-node-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.wfs-node-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--xp-radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.wfs-node-title {
+  font-family: var(--xp-font-body);
+  font-size: 13px;
+  font-weight: var(--xp-weight-semibold);
+  color: var(--xp-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wfs-node-subtitle {
+  font-size: 11px;
+  color: var(--xp-text-muted);
+  font-family: var(--xp-font-mono);
+}
+
+.wfs-node-desc {
+  font-size: 11px;
+  color: var(--xp-text-secondary);
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+
+.wfs-node-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: var(--xp-radius-full);
+  font-weight: var(--xp-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* ─── Inspector Panel ─────────────────────────────────────── */
+
+.wfs-inspector {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 320px;
+  height: 100%;
+  background: var(--xp-bg-surface);
+  border-left: 1px solid var(--xp-border-default);
+  box-shadow: var(--xp-shadow-xl);
+  z-index: var(--xp-z-dropdown);
+  display: flex;
+  flex-direction: column;
+  animation: xp-slide-in-right 200ms var(--xp-ease-default) forwards;
+}
+
+.wfs-inspector-header {
+  padding: var(--xp-space-4);
+  border-bottom: 1px solid var(--xp-border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.wfs-inspector-title {
+  font-size: var(--xp-text-base);
+  font-weight: var(--xp-weight-semibold);
+  color: var(--xp-text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--xp-space-2);
+}
+
+.wfs-inspector-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--xp-space-4);
+}
+
+.wfs-inspector-section {
+  margin-bottom: var(--xp-space-5);
+}
+
+.wfs-inspector-section-title {
+  font-size: var(--xp-text-xs);
+  font-weight: var(--xp-weight-medium);
+  color: var(--xp-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--xp-tracking-wider);
+  margin-bottom: var(--xp-space-2);
+}
+
+/* ─── Context Menu ────────────────────────────────────────── */
+
+.wfs-context-menu {
+  position: fixed;
+  background: var(--xp-bg-elevated);
+  border: 1px solid var(--xp-border-default);
+  border-radius: var(--xp-radius-lg);
+  padding: 4px;
+  box-shadow: var(--xp-shadow-xl);
+  z-index: var(--xp-z-modal);
+  min-width: 180px;
+  animation: xp-scale-in 100ms var(--xp-ease-default) forwards;
+}
+
+.wfs-context-item {
+  display: flex;
+  align-items: center;
+  gap: var(--xp-space-2);
+  padding: 8px 12px;
+  font-size: var(--xp-text-sm);
+  color: var(--xp-text-secondary);
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  border-radius: var(--xp-radius-sm);
+  transition: all 100ms ease;
+}
+
+.wfs-context-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--xp-text-primary);
+}
+
+.wfs-context-item.danger {
+  color: var(--xp-danger);
+}
+
+.wfs-context-item.danger:hover {
+  background: var(--xp-danger-bg);
+}
+
+.wfs-context-sep {
+  height: 1px;
+  background: var(--xp-border-subtle);
+  margin: 4px 8px;
+}
+
+/* ─── ReactFlow Overrides ─────────────────────────────────── */
+
+.wfs-canvas .react-flow__node {
+  border: none;
+  background: none;
+  padding: 0;
+}
+
+.wfs-canvas .react-flow__controls {
+  background: var(--xp-bg-surface);
+  border: 1px solid var(--xp-border-default);
+  border-radius: var(--xp-radius-lg);
+  box-shadow: var(--xp-shadow-md);
+}
+
+.wfs-canvas .react-flow__controls-button {
+  background: var(--xp-bg-surface);
+  border-color: var(--xp-border-subtle);
+  fill: var(--xp-text-secondary);
+}
+
+.wfs-canvas .react-flow__controls-button:hover {
+  background: var(--xp-bg-elevated);
+  fill: var(--xp-text-primary);
+}
+
+.wfs-canvas .react-flow__minimap {
+  background: var(--xp-bg-surface);
+  border: 1px solid var(--xp-border-default);
+  border-radius: var(--xp-radius-lg);
+}
+
+.wfs-canvas .react-flow__handle {
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--xp-bg-surface);
+}
+
+.wfs-canvas .react-flow__handle-top {
+  background: var(--xp-purple);
+}
+
+.wfs-canvas .react-flow__handle-bottom {
+  background: var(--xp-cyan);
+}

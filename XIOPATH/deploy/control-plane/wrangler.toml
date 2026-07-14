@@ -1,0 +1,66 @@
+# ==================================================
+# XIOPATH Control Plane — Cloudflare Workers Config
+# ==================================================
+# Deploy:  npx wrangler deploy
+# Dev:     npx wrangler dev
+# D1 init: npx wrangler d1 execute xiopath-global --file=migrations/0001_init.sql
+# ==================================================
+
+name = "xiopath-control"
+main = "src/main.py"
+compatibility_date = "2026-07-01"
+compatibility_flags = ["python_workers"]
+
+# ── Durable Objects ──────────────────────────────
+[durable_objects]
+bindings = [
+  { name = "WS_HUB", class_name = "XiopathHub" },
+  { name = "NODE_STATE", class_name = "NodeState" },
+]
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["XiopathHub", "NodeState"]
+
+# ── D1 Database (Global Registry) ────────────────
+[[d1_databases]]
+binding = "DB"
+database_name = "xiopath-global"
+database_id = ""  # Fill after: wrangler d1 create xiopath-global
+
+# ── R2 Storage (Shared Assets) ───────────────────
+[[r2_buckets]]
+binding = "ASSETS"
+bucket_name = "xiopath-assets"
+
+# ── KV Namespace (Fast Lookups) ──────────────────
+[[kv_namespaces]]
+binding = "CACHE"
+id = ""  # Fill after: wrangler kv namespace create CACHE
+
+# ── Vectorize (Semantic Search) ──────────────────
+[[vectorize]]
+binding = "INTENT_INDEX"
+index_name = "xiopath-intents"
+
+# ── Queues (Task Distribution) ───────────────────
+[[queues.producers]]
+binding = "TASK_QUEUE"
+queue = "xiopath-tasks"
+
+[[queues.consumers]]
+queue = "xiopath-tasks"
+max_batch_size = 10
+max_batch_timeout = 5
+
+# ── Environment Variables ────────────────────────
+[vars]
+ENVIRONMENT = "production"
+JWT_ALGORITHM = "HS256"
+JWT_EXPIRY_HOURS = "24"
+NODE_HEARTBEAT_TIMEOUT_S = "60"
+MAX_TRUST_TIERS = "5"
+
+# Secrets (set via: wrangler secret put JWT_SECRET)
+# JWT_SECRET
+# WORKER_SECRET

@@ -1,0 +1,68 @@
+---
+# ── Frontend Deployment ───────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: xiopath-frontend
+  namespace: xiopath
+  labels:
+    app: xiopath
+    component: frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: xiopath
+      component: frontend
+  template:
+    metadata:
+      labels:
+        app: xiopath
+        component: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: xiopath-frontend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+              name: http
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 15
+
+---
+# ── Frontend Service ──────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: xiopath-frontend
+  namespace: xiopath
+  labels:
+    app: xiopath
+    component: frontend
+spec:
+  type: ClusterIP
+  selector:
+    app: xiopath
+    component: frontend
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80

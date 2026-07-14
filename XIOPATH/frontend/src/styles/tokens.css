@@ -1,0 +1,267 @@
+/*
+ * XIOPATH Design System — Tokens
+ * ================================
+ * A comprehensive design token system for the XIOPATH platform.
+ * Deep Space + Electric Cyan + Aurora Purple palette.
+ * All values are CSS custom properties for easy theming.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  /* ─── Color: Background ─────────────────────────────────── */
+  --xp-bg-void:       #050508;
+  --xp-bg-deep:       #0a0a0f;
+  --xp-bg-base:       #0f1017;
+  --xp-bg-surface:    #161822;
+  --xp-bg-elevated:   #1e2030;
+  --xp-bg-overlay:    rgba(10, 10, 15, 0.85);
+
+  /* ─── Color: Border ─────────────────────────────────────── */
+  --xp-border-subtle: rgba(255, 255, 255, 0.06);
+  --xp-border-default: rgba(255, 255, 255, 0.10);
+  --xp-border-strong: rgba(255, 255, 255, 0.16);
+  --xp-border-focus:  rgba(6, 214, 160, 0.5);
+
+  /* ─── Color: Text ───────────────────────────────────────── */
+  --xp-text-primary:  #f0f2f5;
+  --xp-text-secondary: #8b8fa3;
+  --xp-text-muted:    #555970;
+  --xp-text-disabled: #3a3d4e;
+  --xp-text-inverse:  #0a0a0f;
+
+  /* ─── Color: Brand ──────────────────────────────────────── */
+  --xp-cyan:          #06d6a0;
+  --xp-cyan-hover:    #05c091;
+  --xp-cyan-muted:    rgba(6, 214, 160, 0.15);
+  --xp-cyan-glow:     rgba(6, 214, 160, 0.4);
+
+  --xp-purple:        #7c3aed;
+  --xp-purple-hover:  #6d28d9;
+  --xp-purple-muted:  rgba(124, 58, 237, 0.15);
+  --xp-purple-glow:   rgba(124, 58, 237, 0.4);
+
+  --xp-blue:          #3b82f6;
+  --xp-blue-hover:    #2563eb;
+  --xp-blue-muted:    rgba(59, 130, 246, 0.15);
+
+  /* ─── Color: Semantic ───────────────────────────────────── */
+  --xp-success:       #06d6a0;
+  --xp-success-bg:    rgba(6, 214, 160, 0.10);
+  --xp-warning:       #f59e0b;
+  --xp-warning-bg:    rgba(245, 158, 11, 0.10);
+  --xp-danger:        #ef4444;
+  --xp-danger-bg:     rgba(239, 68, 68, 0.10);
+  --xp-info:          #3b82f6;
+  --xp-info-bg:       rgba(59, 130, 246, 0.10);
+
+  /* ─── Color: Gradient ───────────────────────────────────── */
+  --xp-gradient-brand: linear-gradient(135deg, var(--xp-cyan), var(--xp-purple));
+  --xp-gradient-subtle: linear-gradient(135deg, rgba(6, 214, 160, 0.08), rgba(124, 58, 237, 0.08));
+  --xp-gradient-glow: linear-gradient(135deg, var(--xp-cyan-glow), var(--xp-purple-glow));
+  --xp-gradient-surface: linear-gradient(180deg, var(--xp-bg-elevated), var(--xp-bg-surface));
+
+  /* ─── Typography: Font Family ───────────────────────────── */
+  --xp-font-display:  'Space Grotesk', system-ui, sans-serif;
+  --xp-font-body:     'Inter', system-ui, sans-serif;
+  --xp-font-mono:     'JetBrains Mono', 'SF Mono', monospace;
+
+  /* ─── Typography: Font Size ─────────────────────────────── */
+  --xp-text-xs:       0.6875rem;   /* 11px */
+  --xp-text-sm:       0.8125rem;   /* 13px */
+  --xp-text-base:     0.875rem;    /* 14px */
+  --xp-text-md:       1rem;        /* 16px */
+  --xp-text-lg:       1.125rem;    /* 18px */
+  --xp-text-xl:       1.25rem;     /* 20px */
+  --xp-text-2xl:      1.5rem;      /* 24px */
+  --xp-text-3xl:      1.875rem;    /* 30px */
+  --xp-text-4xl:      2.25rem;     /* 36px */
+
+  /* ─── Typography: Font Weight ───────────────────────────── */
+  --xp-weight-light:    300;
+  --xp-weight-regular:  400;
+  --xp-weight-medium:   500;
+  --xp-weight-semibold: 600;
+  --xp-weight-bold:     700;
+
+  /* ─── Typography: Line Height ───────────────────────────── */
+  --xp-leading-tight:   1.2;
+  --xp-leading-normal:  1.5;
+  --xp-leading-relaxed: 1.7;
+
+  /* ─── Typography: Letter Spacing ────────────────────────── */
+  --xp-tracking-tight:  -0.025em;
+  --xp-tracking-normal:  0;
+  --xp-tracking-wide:    0.025em;
+  --xp-tracking-wider:   0.05em;
+  --xp-tracking-widest:  0.1em;
+
+  /* ─── Spacing ───────────────────────────────────────────── */
+  --xp-space-0:   0;
+  --xp-space-1:   0.25rem;   /* 4px */
+  --xp-space-2:   0.5rem;    /* 8px */
+  --xp-space-3:   0.75rem;   /* 12px */
+  --xp-space-4:   1rem;      /* 16px */
+  --xp-space-5:   1.25rem;   /* 20px */
+  --xp-space-6:   1.5rem;    /* 24px */
+  --xp-space-8:   2rem;      /* 32px */
+  --xp-space-10:  2.5rem;    /* 40px */
+  --xp-space-12:  3rem;      /* 48px */
+  --xp-space-16:  4rem;      /* 64px */
+  --xp-space-20:  5rem;      /* 80px */
+
+  /* ─── Border Radius ─────────────────────────────────────── */
+  --xp-radius-sm:   4px;
+  --xp-radius-md:   8px;
+  --xp-radius-lg:   12px;
+  --xp-radius-xl:   16px;
+  --xp-radius-2xl:  24px;
+  --xp-radius-full: 9999px;
+
+  /* ─── Shadow ────────────────────────────────────────────── */
+  --xp-shadow-sm:    0 1px 2px rgba(0, 0, 0, 0.3);
+  --xp-shadow-md:    0 4px 12px rgba(0, 0, 0, 0.25);
+  --xp-shadow-lg:    0 8px 24px rgba(0, 0, 0, 0.3);
+  --xp-shadow-xl:    0 16px 48px rgba(0, 0, 0, 0.35);
+  --xp-shadow-glow-cyan:   0 0 20px rgba(6, 214, 160, 0.15);
+  --xp-shadow-glow-purple: 0 0 20px rgba(124, 58, 237, 0.15);
+  --xp-shadow-glow-danger: 0 0 20px rgba(239, 68, 68, 0.15);
+  --xp-shadow-inner: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+
+  /* ─── Z-Index Layers ────────────────────────────────────── */
+  --xp-z-base:     0;
+  --xp-z-dropdown: 100;
+  --xp-z-sticky:   200;
+  --xp-z-modal:    300;
+  --xp-z-toast:    400;
+  --xp-z-overlay:  500;
+  --xp-z-max:      9999;
+
+  /* ─── Animation ─────────────────────────────────────────── */
+  --xp-duration-fast:     100ms;
+  --xp-duration-normal:   200ms;
+  --xp-duration-slow:     300ms;
+  --xp-duration-slower:   500ms;
+  --xp-ease-default:      cubic-bezier(0.22, 1, 0.36, 1);
+  --xp-ease-in:           cubic-bezier(0.55, 0, 1, 0.45);
+  --xp-ease-out:          cubic-bezier(0, 0.55, 0.45, 1);
+  --xp-ease-spring:       cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ─── Layout ────────────────────────────────────────────── */
+  --xp-sidebar-width:     264px;
+  --xp-sidebar-collapsed: 64px;
+  --xp-topbar-height:     56px;
+  --xp-panel-width:       360px;
+
+  /* ─── Breakpoints (reference only — use in @media) ──────── */
+  /* sm: 640px | md: 768px | lg: 1024px | xl: 1280px | 2xl: 1536px */
+}
+
+
+/* ─── Global Reset ────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-family: var(--xp-font-body);
+  font-size: var(--xp-text-base);
+  font-weight: var(--xp-weight-regular);
+  line-height: var(--xp-leading-normal);
+  color: var(--xp-text-primary);
+  background-color: var(--xp-bg-deep);
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+/* Ambient gradient background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(ellipse 600px 400px at 10% 20%, rgba(6, 214, 160, 0.06), transparent),
+    radial-gradient(ellipse 500px 500px at 80% 60%, rgba(124, 58, 237, 0.05), transparent),
+    radial-gradient(ellipse 400px 300px at 50% 90%, rgba(59, 130, 246, 0.04), transparent);
+  pointer-events: none;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* ─── Selection ───────────────────────────────────────────── */
+::selection {
+  background-color: var(--xp-cyan-muted);
+  color: var(--xp-text-primary);
+}
+
+/* ─── Scrollbar ───────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--xp-border-default);
+  border-radius: var(--xp-radius-full);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--xp-border-strong);
+}
+
+/* ─── Focus Ring ──────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--xp-cyan);
+  outline-offset: 2px;
+}
+
+/* ─── Headings ────────────────────────────────────────────── */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--xp-font-display);
+  font-weight: var(--xp-weight-semibold);
+  letter-spacing: var(--xp-tracking-tight);
+  line-height: var(--xp-leading-tight);
+  color: var(--xp-text-primary);
+}
+
+h1 { font-size: var(--xp-text-4xl); }
+h2 { font-size: var(--xp-text-2xl); }
+h3 { font-size: var(--xp-text-xl); }
+h4 { font-size: var(--xp-text-lg); }
+h5 { font-size: var(--xp-text-md); }
+
+/* ─── Gradient Text ───────────────────────────────────────── */
+.xp-gradient-text {
+  background: var(--xp-gradient-brand);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ─── Monospace ────────────────────────────────────────────── */
+code, pre, .xp-mono {
+  font-family: var(--xp-font-mono);
+}
+
+/* ─── Links ───────────────────────────────────────────────── */
+a {
+  color: var(--xp-cyan);
+  text-decoration: none;
+  transition: color var(--xp-duration-fast) var(--xp-ease-default);
+}
+a:hover {
+  color: var(--xp-cyan-hover);
+}

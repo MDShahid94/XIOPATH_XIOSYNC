@@ -1,0 +1,12 @@
+{
+  "name": "mock_captcha_solver",
+  "version": "1.0.0",
+  "description": "Mock captcha solver that injects a bypass token into captcha fields",
+  "author": "XIOPATH",
+  "category": "action",
+  "entry_point": "run",
+  "required_permissions": ["page.fill", "page.click", "page.query_selector"],
+  "compatible_actions": ["solve_captcha", "bypass_captcha"],
+  "config_schema": {},
+  "enabled": true
+}

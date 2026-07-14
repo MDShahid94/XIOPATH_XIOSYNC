@@ -1,0 +1,9 @@
+{
+  "bayesian_prior_k": 20.0,
+  "prior_mean": 0.5,
+  "ema_alpha": 0.15,
+  "anti_spam_enabled": true,
+  "promote_threshold": 0.80,
+  "demote_threshold": 0.65,
+  "archive_threshold": 0.30
+}

@@ -1,0 +1,231 @@
+# ==================================================
+# XIOPATH — Kubernetes Deployment (Phase P.2)
+# ==================================================
+# Apply:  kubectl apply -f k8s/
+# Status: kubectl get pods -l app=xiopath
+# Logs:   kubectl logs -l app=xiopath-api -f
+# ==================================================
+
+---
+# ── Namespace ─────────────────────────────────────
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: xiopath
+  labels:
+    app.kubernetes.io/name: xiopath
+
+---
+# ── ConfigMap ─────────────────────────────────────
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: xiopath-config
+  namespace: xiopath
+data:
+  DATABASE_PATH: "/app/data/memory.db"
+  CHROMA_PATH: "/app/data/vector_db"
+  SECRETS_PATH: "/app/data/secrets.json"
+  API_KEYS_PATH: "/app/data/api_keys.json"
+  VAULT_KEY_PATH: "/app/data/.vault_key"
+  ENVIRONMENT: "production"
+
+---
+# ── Secret (template — fill before applying) ─────
+apiVersion: v1
+kind: Secret
+metadata:
+  name: xiopath-secrets
+  namespace: xiopath
+type: Opaque
+stringData:
+  JWT_SECRET_KEY: "CHANGE_ME_TO_A_STRONG_SECRET"
+  # GEMINI_API_KEY: ""
+
+---
+# ── PersistentVolumeClaim ─────────────────────────
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: xiopath-data-pvc
+  namespace: xiopath
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+
+---
+# ── API Deployment ────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: xiopath-api
+  namespace: xiopath
+  labels:
+    app: xiopath
+    component: api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: xiopath
+      component: api
+  template:
+    metadata:
+      labels:
+        app: xiopath
+        component: api
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
+      # DB Fix: Init container runs Alembic migrations before API starts
+      initContainers:
+        - name: migrate
+          image: xiopath-api:latest
+          command: ["python", "-m", "alembic", "upgrade", "head"]
+          envFrom:
+            - configMapRef:
+                name: xiopath-config
+            - secretRef:
+                name: xiopath-secrets
+          volumeMounts:
+            - name: xiopath-data
+              mountPath: /app/data
+      containers:
+        - name: api
+          image: xiopath-api:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+              name: http
+          envFrom:
+            - configMapRef:
+                name: xiopath-config
+            - secretRef:
+                name: xiopath-secrets
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "2000m"
+              memory: "2Gi"
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health/deep
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: xiopath-data-pvc
+
+---
+# ── API Service ───────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: xiopath-api
+  namespace: xiopath
+  labels:
+    app: xiopath
+    component: api
+spec:
+  type: ClusterIP
+  selector:
+    app: xiopath
+    component: api
+  ports:
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
+      name: http
+
+---
+# ── Worker Deployment ─────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: xiopath-worker
+  namespace: xiopath
+  labels:
+    app: xiopath
+    component: worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: xiopath
+      component: worker
+  template:
+    metadata:
+      labels:
+        app: xiopath
+        component: worker
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+      containers:
+        - name: worker
+          image: xiopath-worker:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: CENTRAL_SERVER_WS
+              value: "ws://xiopath-api:8000/api/v1/agent/worker-stream"
+          envFrom:
+            - secretRef:
+                name: xiopath-secrets
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+          securityContext:
+            allowPrivilegeEscalation: false
+
+---
+# ── Ingress (optional, for external access) ──────
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: xiopath-ingress
+  namespace: xiopath
+  annotations:
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+spec:
+  rules:
+    - host: api.xiopath.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: xiopath-api
+                port:
+                  number: 8000

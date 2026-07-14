@@ -1,0 +1,103 @@
+# ==================================================
+# XIOPATH — Docker Compose (Phase P.1: Production Ready)
+# ==================================================
+# Start:    docker compose up -d
+# Stop:     docker compose down
+# Logs:     docker compose logs -f api
+# Tests:    docker compose exec api python -m pytest tests/ -v
+# Migrate:  docker compose exec api alembic upgrade head
+# ==================================================
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+    image: xiopath-frontend:latest
+    container_name: xiopath-frontend
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  api:
+    build:
+      context: .
+      target: api
+      args:
+        BUILDKIT_INLINE_CACHE: "1"
+    image: xiopath-api:latest
+    container_name: xiopath-api
+    ports:
+      - "${API_PORT:-8000}:8000"
+    env_file: .env
+    environment:
+      - DATABASE_PATH=/app/data/memory.db
+      - CHROMA_PATH=/app/data/vector_db
+      - SECRETS_PATH=/app/data/secrets.json
+      - API_KEYS_PATH=/app/data/api_keys.json
+      - VAULT_KEY_PATH=/app/data/.vault_key
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:?JWT_SECRET_KEY must be set in .env}
+      - ENVIRONMENT=${ENVIRONMENT:-production}
+    volumes:
+      - xiopath-data:/app/data
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=100M
+      - /app/__pycache__:size=10M
+      - /run:size=10M
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  worker:
+    build:
+      context: .
+      target: worker
+      args:
+        BUILDKIT_INLINE_CACHE: "1"
+    image: xiopath-worker:latest
+    container_name: xiopath-worker
+    env_file: .env
+    environment:
+      - CENTRAL_SERVER_WS=ws://api:8000/api/v1/agent/worker-stream
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:?JWT_SECRET_KEY must be set in .env}
+      - ENVIRONMENT=${ENVIRONMENT:-production}
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  xiopath-data:
+    name: xiopath-data

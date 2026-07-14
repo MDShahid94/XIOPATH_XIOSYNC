@@ -1,0 +1,97 @@
+[project]
+name = "xiosync"
+version = "0.1.0"
+description = "XIOSYNC control plane (rebuild per xiosync-blueprint; stack pinned in DECISIONS.md D-013)"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "fastapi>=0.115,<1",
+    "uvicorn>=0.30,<1",
+    "sqlalchemy>=2.0,<2.1",
+    "alembic>=1.13,<2",
+    "psycopg[binary]>=3.2,<4",
+    "pydantic>=2.7,<3",
+    "uuid-utils>=0.9",
+    "cryptography>=43",
+    "argon2-cffi>=23",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8,<9",
+    "pytest-asyncio>=0.24",
+    "ruff>=0.8",
+    "mypy>=1.13",
+    "import-linter>=2",
+    "httpx>=0.27",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["xiosync"]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+src = ["xiosync", "tests"]
+extend-exclude = ["XIOPATH", "xiosync-blueprint", "persistence/migrations/versions"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "S", "N"]
+ignore = ["S101"] # assert allowed in tests; production asserts are caught in review
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S105", "S106"] # test-only literal credentials
+
+[tool.mypy]
+strict = true
+python_version = "3.13"
+files = ["xiosync", "tests"]
+exclude = ["XIOPATH", "xiosync-blueprint"]
+mypy_path = "."
+
+[tool.importlinter]
+root_packages = ["xiosync"]
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "RULE-ARCH-1/2: layers point downward only (api -> services -> persistence -> domain)"
+type = "layers"
+layers = [
+    "xiosync.api",
+    "xiosync.services",
+    "xiosync.persistence",
+    "xiosync.domain",
+]
+
+[[tool.importlinter.contracts]]
+name = "RULE-ARCH-2: api never imports persistence directly"
+type = "forbidden"
+source_modules = ["xiosync.api"]
+forbidden_modules = ["xiosync.persistence"]
+
+[[tool.importlinter.contracts]]
+name = "RULE-ARCH-1: domain is framework-free (no web/DB imports)"
+type = "forbidden"
+source_modules = ["xiosync.domain"]
+forbidden_modules = ["fastapi", "starlette", "sqlalchemy", "alembic", "psycopg", "uvicorn"]
+
+[[tool.importlinter.contracts]]
+name = "platform is cross-cutting and imports no layer"
+type = "forbidden"
+source_modules = ["xiosync.platform"]
+forbidden_modules = [
+    "xiosync.api",
+    "xiosync.services",
+    "xiosync.domain",
+    "xiosync.persistence",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "integration: requires a migrated real PostgreSQL via DATABASE_URL (doc 06 \u00a710)",
+    "security: security-negative suite (doc 05 \u00a78)",
+]
