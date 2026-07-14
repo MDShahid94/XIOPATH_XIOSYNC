@@ -363,3 +363,35 @@
   Once 1–2 are done, the Phase 0 exit gate (doc 10) is closed and Phase 1
   (domain ontology, doc 03) opens. Autogenerate-drift check still deferred
   to Phase 1+ (ORM models; `target_metadata` is `None`).
+---
+
+## Session 015 — Phase 0 exit gate CLOSED; canonical repo established (D-020)
+
+- **Date:** 2026-07-15
+- **Scope:** Operator supplied a fine-grained PAT (`GITHUB_FINE_GRAINED_PAT`)
+  and asked v0 to manage GitHub directly until the rebuild completes,
+  identifying `MDShahid94/XIOSYNC_V0` as their real repo (its main was stale
+  Session 012 state, `cf6aa86` — the Session 012→013 commit never landed).
+  Budget 3.91; sentinel set, guard → continue throughout.
+- **Produced (no code changes — repo/infra + docs only):**
+  - Archived old canonical main to `archive/pre-rebuild-session-012`
+    (`cf6aa86`), then force-pushed current state (Session 014, CI-green) to
+    canonical `main` → `a14e791`. One-time history replacement, pre-protection.
+  - **Phase 0 exit gate closed on canonical repo:** push-trigger CI run
+    **`29368647653`, SHA `a14e791`, conclusion=success** (lint-type-arch,
+    unit, migration-chain). Branch protection on `main` now requires all
+    three checks, strict mode (D-016). Gate 10 scanner = GitHub-native
+    secret scanning + push protection, both `enabled` (D-020).
+  - **D-020** appended to DECISIONS.md (canonical remote + scanner choice +
+    dual-push rule). STATE.md: Phase 0 → ✅, Phase 1 opened, next action
+    rewritten (first slice = five identity tables as ORM models + RLS +
+    migrations; close INV-TEST-SCHEMA-2 drift half in the same slice).
+- **Verification:** GitHub API responses captured in-session: protection
+  contexts `['lint-type-arch','unit','migration-chain']`; secret_scanning
+  and push_protection both `enabled`; run 29368647653 success on main.
+- **Decisions:** D-020 (see DECISIONS.md).
+- **Not done / known gaps at handoff:**
+  - PR #1 on the mirror repo (`chainaanantapurasha-rgb/XIO_SYNC_V0`) left
+    open — superseded by the canonical-main proof; merge or close at will.
+  - Phase 1 not started (budget preservation). Next session boots straight
+    into STATE.md "exact next action" step 2.

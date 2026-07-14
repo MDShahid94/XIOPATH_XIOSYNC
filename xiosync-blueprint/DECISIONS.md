@@ -266,6 +266,34 @@
   `uv run lint-imports` → "Contracts: 4 kept, 0 broken."). The blocking
   lint-imports CI gate (doc 09 §7) is meaningful rather than vacuously broken.
 
+## D-020 — Canonical remote is MDShahid94/XIOSYNC_V0; GitHub-native secret scanning is the Gate 10 scanner
+
+- **Status:** Accepted
+- **Decision:** The operator's public repo `MDShahid94/XIOSYNC_V0` (default
+  branch `main`) is the canonical remote for the rebuild, managed directly via
+  the operator-supplied fine-grained PAT (env `GITHUB_FINE_GRAINED_PAT`) until
+  the rebuild + production workspace is complete. The v0-chat-connected repo
+  (`chainaanantapurasha-rgb/XIO_SYNC_V0`, remote `origin`) is a working mirror
+  that changes whenever the operator credit-cycles v0 accounts; every session
+  pushes to both, canonical last. The Gate 10 secret scanner (doc 09 §7) is
+  GitHub-native secret scanning **with push protection**, enabled on the
+  canonical repo.
+- **Context:** Session 015. Operator credit-cycling breaks the v0 git
+  connection each cycle (Session 013→014 lost history and gitignore rules);
+  a stable canonical remote decouples the project's git truth from v0 account
+  churn. Old canonical main (Session 012 state, `cf6aa86`) is preserved at
+  branch `archive/pre-rebuild-session-012`.
+- **Alternatives rejected:** treating each v0-connected repo as canonical
+  (identity churns every credit cycle; PR #1's repo will go stale); gitleaks/
+  trufflehog in CI as the Gate 10 scanner (viable, but GitHub-native scanning
+  is zero-maintenance on a public repo, includes push protection, and adds no
+  CI latency — revisit only if the repo goes private without GHAS).
+- **Consequences:** branch protection on canonical `main` requires the three
+  Phase 0 jobs (lint-type-arch, unit, migration-chain) with strict
+  up-to-date-ness; direct pushes that leak credentials are blocked at push
+  time; sessions must not force-push canonical `main` again now that
+  protection is on (the one-time history replacement predates protection).
+
 ---
 
 ## Deferred decisions

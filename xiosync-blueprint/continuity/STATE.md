@@ -6,9 +6,15 @@
 > not match the newest entry in `HANDOFF-LOG.md`, treat the log as truth and
 > repair this file first.
 
-- **Last updated:** Session 014 — 2026-07-15
-- **Repo:** `chainaanantapurasha-rgb/XIO_SYNC_V0` (GitHub; default branch
-  `main`). Work branch: `v0/shahidraiganj-7383-804ea72a` (PR #1 → main).
+- **Last updated:** Session 015 — 2026-07-15
+- **Repo (canonical, D-020):** `MDShahid94/XIOSYNC_V0` (GitHub; default
+  branch `main`; remote `shahid`; managed via `GITHUB_FINE_GRAINED_PAT`).
+  The v0-connected repo (`origin`, currently
+  `chainaanantapurasha-rgb/XIO_SYNC_V0`) is a working mirror that churns
+  with operator credit-cycles — push every step to both, canonical last.
+  Pushing to `shahid` needs the auth header trick: `AUTH=$(printf
+  "x-access-token:%s" "$GITHUB_FINE_GRAINED_PAT" | base64 -w0); git -c
+  http.extraheader="AUTHORIZATION: basic $AUTH" push shahid <ref>`.
 
 ---
 
@@ -20,45 +26,49 @@
 | Legacy XIOPATH placed in repo root as evidence | ✅ Complete (committed in Session 002) |
 | Continuity plane (this system: AGENTS.md, STATE, HANDOFF-LOG, SESSION-PROTOCOL) | ✅ Complete (Session 002) |
 | Phase R — Rebuild-readiness deep research (doc 10) | ✅ Complete (Session 003 — D-013..D-018) |
-| **Phase 0 — Foundation & guardrails** | In progress — all agent work complete. **CI proven green on GitHub (D-017): run `29367288883`, SHA `1f84669`, PR #1** — jobs lint-type-arch / unit / migration-chain all pass. Note: history was squashed in the Session 013→014 workspace duplication; old SHAs (`bc3faa8` etc.) no longer resolve, the work itself survived. **Remaining: operator merges PR #1 + sets branch protection** (D-016) |
-| Phases 1–7 | 🔲 Blocked (sequential, gated) |
+| **Phase 0 — Foundation & guardrails** | ✅ **Complete (Session 015).** Exit gate closed on canonical repo `MDShahid94/XIOSYNC_V0`: CI green on `main` — **run `29368647653`, SHA `a14e791`, event push, conclusion success** (jobs lint-type-arch / unit / migration-chain); branch protection on `main` requires all three (strict) per D-016; Gate 10 scanner = GitHub-native secret scanning + push protection, enabled (D-020). Prior PR-proof on the mirror: run `29367288883`, SHA `1f84669` |
+| **Phase 1 — Domain ontology (doc 03)** | 🔜 Open — next up |
+| Phases 2–7 | 🔲 Blocked (sequential, gated) |
 
 **No XIOSYNC implementation code exists yet.** The `app/` directory is the v0
 sandbox scaffold, not XIOSYNC; per D-015 it is deleted when Phase 0 begins.
 
 ## The exact next action
 
-Close the **Phase 0 exit gate** (doc 10). All agent-side work is done and
-proven; what remains is operator action, then verification:
+Begin **Phase 1 — Identity, tenancy & the authorization spine** (doc 10
+Phase 1; docs 03, 05, 06). Phase 0 is closed — do not revisit it.
 
 1. Boot per SESSION-PROTOCOL §1 (sentinel set/guard; if freshly duplicated
-   workspace, §7 drill first — and note the duplication may squash git
-   history and drop gitignore rules / `xiosync/*` symlinks; check
-   `git ls-files xiosync/` and `uv run python -c "import
-   xiosync.platform.clock"` before trusting CI).
-2. **Complete — do not redo:** everything through CI-green-on-GitHub.
-   Proof (D-017): workflow `.github/workflows/ci.yml` on branch
-   `v0/shahidraiganj-7383-804ea72a`, PR #1, run `29367288883` SHA
-   `1f84669` `conclusion=success` (jobs: lint-type-arch, unit,
-   migration-chain on postgres:17). See HANDOFF-LOG Session 014.
-3. **Blocked on operator:** (a) merge PR #1 into `main`; (b) set branch
-   protection on `main` requiring all three CI jobs (D-016); (c) choose
-   the Gate 10 secret scanner (doc 09 §7).
-4. When a session starts and PR #1 is merged: verify the push-trigger run
-   on `main` is green, record it in HANDOFF-LOG, flip the Phase 0
-   milestone to ✅, and open **Phase 1 (domain ontology, doc 03)**. If PR
-   #1 is not merged, state the blocker and stop cheaply — do not start
-   Phase 1 early (roadmap ordering is mandatory).
-5. Deferred: autogenerate-drift half of INV-TEST-SCHEMA-2 until ORM models
-   exist (Phase 1+; `target_metadata` is `None` in
-   `persistence/migrations/env.py`).
+   workspace, §7 drill first — verify `git ls-files xiosync/` shows the
+   namespace symlinks and `uv run python -c "import
+   xiosync.platform.clock"` works; verify remote `shahid` exists and
+   points at the canonical repo per D-020).
+2. First Phase 1 slice (work in dependency order, one migration chain):
+   the five identity tables — `organizations`, `auth_identities`,
+   `memberships`, `sessions`, `actors` — as ORM models in
+   `persistence/`, with immutable `organization_id` (C2) and RLS policies
+   (doc 05 §3.2), delivered as Alembic migrations that pass the existing
+   migration-chain harness (upgrade → downgrade → re-upgrade). Wiring
+   ORM metadata also unblocks the deferred autogenerate-drift half of
+   INV-TEST-SCHEMA-2 (`target_metadata` in
+   `persistence/migrations/env.py`) — close it in the same slice.
+3. Then, in later slices: OrgContext middleware (C1), session lifecycle
+   (C8), authority axes (H4/H8), single `authorize(...)` decision point
+   (C3). Exit gate = the security-negative suite (doc 05 §8, doc 11).
+4. Before writing app-facing code, resolve D-015's note that the v0
+   sandbox `app/` scaffold is deleted when implementation begins — check
+   D-015's exact wording and comply.
+5. Push every step commit to **both** remotes (mirror `origin`, canonical
+   `shahid` — see the auth-header trick in the Repo header above).
+   Canonical `main` is branch-protected: work on a feature branch and PR
+   into `main`; never force-push canonical `main`.
 
 No structural questions remain open — do not improvise a stack or layout
-choice; everything is in D-013..D-019.
+choice; everything is in D-013..D-020.
 
-**Governing docs for the next task:** 10 (roadmap, Phase 0), 04 §2/§6
-(layering + layout), 06 (persistence/migrations, §10 test harness),
-09 (config/CI), DECISIONS.md D-013..D-019.
+**Governing docs for the next task:** 10 (Phase 1), 03 (ontology), 05
+(security/identity/tenancy), 06 (persistence schema), 04 §2/§6 (layering),
+DECISIONS.md D-013..D-020.
 
 ## Standing constraints (never stale)
 
