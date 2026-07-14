@@ -25,4 +25,7 @@
      SHA per D-017. If red, fix and repeat.
   4. Handoff per §3 (operator items: merge PR, branch protection requiring
      all 3 jobs, Gate 10 scanner choice); checkpoint → IDLE.
-- **Cursor:** step 1.
+- **Cursor:** step 2. Step 1 proof: `yaml ok; jobs: ['lint-type-arch',
+  'unit', 'migration-chain']; push branches: ['main']`; commit `f50063f`
+  on branch `v0/shahidraiganj-7383-804ea72a` (also re-hardened .gitignore:
+  sentinel snapshot, .env*, venv/caches — the duplicate had lost them).
