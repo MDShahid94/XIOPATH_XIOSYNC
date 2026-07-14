@@ -18,6 +18,10 @@ DEFAULT_THRESHOLD = Decimal("0.50")
 DEFAULT_MAX_AGE_HOURS = Decimal("6")
 EXIT_LOW = 20
 EXIT_UNAVAILABLE = 21
+HANDOFF_SEQUENCE = (
+    "handoff=finish smallest safe step; append HANDOFF-LOG; update STATE; "
+    "commit; set CHECKPOINT IDLE; stop"
+)
 
 
 @dataclass(frozen=True)
@@ -102,12 +106,22 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--max-age-hours", default=str(DEFAULT_MAX_AGE_HOURS))
     commands = result.add_subparsers(dest="command", required=True)
     set_command = commands.add_parser(
-        "set", help="atomically record an operator-reported USD balance"
+        "set",
+        help=(
+            "atomically record an operator-reported USD balance and return the "
+            "decision (exit 20 + handoff sequence when below threshold)"
+        ),
     )
     set_command.add_argument("amount")
     commands.add_parser("status", help="show the current decision")
     commands.add_parser("guard", help="fail closed when work should not continue")
-    commands.add_parser("handoff", help="print the required graceful-handoff sequence")
+    commands.add_parser(
+        "handoff",
+        help=(
+            "print the required graceful-handoff sequence "
+            "(always printed, even when the snapshot is missing or stale)"
+        ),
+    )
     return result
 
 
@@ -125,19 +139,24 @@ def main(argv: Sequence[str] | None = None, *, now: datetime | None = None) -> i
             print(f"balance_usd={amount}")
             print(f"updated_at={current_time.astimezone(UTC).isoformat()}")
             print("recorded=true")
+            if amount < threshold:
+                print("decision=handoff-required")
+                print(HANDOFF_SEQUENCE)
+                return EXIT_LOW
+            print("decision=continue")
             return 0
         snapshot = read_snapshot(args.state_file)
     except ValueError as error:
         print(f"error={error}", file=sys.stderr)
         print("action=run: python tools/budget_sentinel.py set <amount>", file=sys.stderr)
+        if args.command == "handoff":
+            print("decision=snapshot-unavailable-fail-closed")
+            print(HANDOFF_SEQUENCE)
         return EXIT_UNAVAILABLE
 
     code = print_status(snapshot, threshold, max_age, current_time)
     if args.command == "handoff":
-        print(
-            "handoff=finish smallest safe step; append HANDOFF-LOG; update STATE; "
-            "commit; set CHECKPOINT IDLE; stop"
-        )
+        print(HANDOFF_SEQUENCE)
     return code
 
 

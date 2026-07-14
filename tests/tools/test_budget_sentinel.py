@@ -14,16 +14,27 @@ def invoke(path: Path, command: str, *extra: str) -> int:
     return main(["--state-file", str(path), *extra, command], now=NOW)
 
 
-def test_set_is_atomic_and_records_without_deciding(
+def test_set_below_threshold_is_atomic_records_and_fails_loud(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     path = tmp_path / "budget.json"
-    assert main(["--state-file", str(path), "set", "0.49"], now=NOW) == 0
+    assert main(["--state-file", str(path), "set", "0.49"], now=NOW) == EXIT_LOW
     assert read_snapshot(path).amount.as_tuple() == (0, (4, 9), -2)
     assert list(tmp_path.iterdir()) == [path]
     output = capsys.readouterr().out
     assert "recorded=true" in output
-    assert "decision=" not in output
+    assert "decision=handoff-required" in output
+    assert "append HANDOFF-LOG" in output
+
+
+def test_set_at_or_above_threshold_records_and_continues(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    path = tmp_path / "budget.json"
+    assert main(["--state-file", str(path), "set", "5.0"], now=NOW) == 0
+    output = capsys.readouterr().out
+    assert "recorded=true" in output
+    assert "decision=continue" in output
 
 
 def test_equal_threshold_continues(tmp_path: Path) -> None:
@@ -36,7 +47,7 @@ def test_above_and_below_threshold(tmp_path: Path, capsys: pytest.CaptureFixture
     path = tmp_path / "budget.json"
     assert main(["--state-file", str(path), "set", "1.25"], now=NOW) == 0
     assert invoke(path, "guard") == 0
-    assert main(["--state-file", str(path), "set", "0.49"], now=NOW) == 0
+    assert main(["--state-file", str(path), "set", "0.49"], now=NOW) == EXIT_LOW
     assert invoke(path, "status") == EXIT_LOW
     assert "decision=handoff-required" in capsys.readouterr().out
 
@@ -76,8 +87,32 @@ def test_handoff_prints_protocol_without_mutating_snapshot(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     path = tmp_path / "budget.json"
-    assert main(["--state-file", str(path), "set", "0.10"], now=NOW) == 0
+    assert main(["--state-file", str(path), "set", "0.10"], now=NOW) == EXIT_LOW
     before = path.read_bytes()
     assert invoke(path, "handoff") == EXIT_LOW
     assert path.read_bytes() == before
     assert "append HANDOFF-LOG" in capsys.readouterr().out
+
+
+def test_handoff_prints_protocol_even_when_snapshot_missing(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    path = tmp_path / "budget.json"
+    assert invoke(path, "handoff") == EXIT_UNAVAILABLE
+    output = capsys.readouterr().out
+    assert "decision=snapshot-unavailable-fail-closed" in output
+    assert "append HANDOFF-LOG" in output
+
+
+def test_handoff_prints_protocol_even_when_snapshot_stale(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    path = tmp_path / "budget.json"
+    path.write_text(
+        json.dumps({"amount_usd": "5", "updated_at": (NOW - timedelta(hours=7)).isoformat()}),
+        encoding="utf-8",
+    )
+    assert invoke(path, "handoff") == EXIT_UNAVAILABLE
+    output = capsys.readouterr().out
+    assert "decision=snapshot-stale" in output
+    assert "append HANDOFF-LOG" in output

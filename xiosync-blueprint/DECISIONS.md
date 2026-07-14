@@ -294,6 +294,29 @@
   time; sessions must not force-push canonical `main` again now that
   protection is on (the one-time history replacement predates protection).
 
+## D-021 — Budget sentinel fails loud: `set` returns the decision; `handoff` always prints the checklist
+
+- **Status:** Accepted
+- **Decision:** `tools/budget_sentinel.py set <amount>` now evaluates the
+  recorded amount against the threshold immediately: below threshold it prints
+  `decision=handoff-required` plus the full handoff sequence and exits `20`;
+  otherwise it prints `decision=continue` and exits `0`. `handoff` prints the
+  graceful-stop checklist unconditionally — including when the snapshot is
+  missing, malformed, or stale (exit `21`,
+  `decision=snapshot-unavailable-fail-closed`).
+- **Rationale:** The operator's stop commands were silently ineffective. `set 0`
+  exited `0` printing only `recorded=true`, giving agents no signal that a
+  handoff was mandatory; and after every credit-cycle workspace duplication
+  (SESSION-PROTOCOL §7.1 — the snapshot is gitignored and does not survive),
+  `handoff` printed only an error and *no checklist* — the exact moment the
+  checklist is most needed. Both violated the fail-loud intent of §4.
+- **Alternatives rejected:** keeping `set` decision-free and relying on agents
+  to always chain `guard` (proven unreliable in practice); printing the
+  checklist only on healthy snapshots (defeats the command's purpose).
+- **Consequences:** SESSION-PROTOCOL §4.2 items 1 and 3 updated; the prior
+  "`set` does not return a budget decision" contract and its test are replaced;
+  `set 0` alone is now a complete, machine-checkable stop order.
+
 ---
 
 ## Deferred decisions

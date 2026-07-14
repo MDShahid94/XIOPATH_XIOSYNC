@@ -63,15 +63,22 @@ def _current_revision(database_url: str) -> str | None:
         engine.dispose()
 
 
+def _single_head(config: Config) -> str:
+    """The chain's one head; fails loudly if the chain ever branches."""
+    heads = ScriptDirectory.from_config(config).get_heads()
+    assert len(heads) == 1, f"chain must have exactly one head (INV-MIG-2), got {heads}"
+    return heads[0]
+
+
 def test_chain_has_exactly_one_head() -> None:
     """INV-MIG-2: one linear chain, no branching heads."""
-    script = ScriptDirectory.from_config(_alembic_config())
-    assert script.get_heads() == ["0001"]
+    _single_head(_alembic_config())
 
 
 def test_upgrade_downgrade_upgrade_roundtrip(scratch_database_url: str) -> None:
     """INV-MIG-3 / INV-TEST-SCHEMA-2: full-chain round-trip from an empty DB."""
     config = _alembic_config()
+    head = _single_head(config)
 
     assert _current_revision(scratch_database_url) is None, (
         "scratch database must start empty (INV-TEST-SCHEMA-1)"
@@ -79,10 +86,10 @@ def test_upgrade_downgrade_upgrade_roundtrip(scratch_database_url: str) -> None:
 
     with _database_url_env(scratch_database_url):
         command.upgrade(config, "head")
-        assert _current_revision(scratch_database_url) == "0001"
+        assert _current_revision(scratch_database_url) == head
 
         command.downgrade(config, "base")
         assert _current_revision(scratch_database_url) is None
 
         command.upgrade(config, "head")
-        assert _current_revision(scratch_database_url) == "0001"
+        assert _current_revision(scratch_database_url) == head

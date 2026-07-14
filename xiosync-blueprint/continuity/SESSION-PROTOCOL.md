@@ -69,14 +69,20 @@ snapshot.
 ### 4.2 Numeric snapshot sentinel
 
 1. The operator refreshes the local, gitignored snapshot with
-   `uv run python tools/budget_sentinel.py set <USD_AMOUNT>`. `set` only
-   validates and records the amount; it does not return a budget decision.
+   `uv run python tools/budget_sentinel.py set <USD_AMOUNT>`. `set` validates,
+   records the amount, and **returns the decision immediately**: below the
+   threshold it prints `decision=handoff-required` plus the full handoff
+   sequence and exits `20`, so `set 0` alone is a complete, unmissable stop
+   order. At or above the threshold it prints `decision=continue` and exits `0`.
 2. After boot/crash recovery and at every checkpoint step boundary, run
    `uv run python tools/budget_sentinel.py guard`.
-3. For `guard`, `status`, and `handoff`, exit `0` means continue. Exit `20`
-   means the amount is below the threshold (default USD 0.50). Exit `21` means
-   the snapshot is absent, invalid, or stale (default maximum age: 6 hours).
-   Both nonzero results fail closed.
+3. For `set`, `guard`, `status`, and `handoff`, exit `0` means continue. Exit
+   `20` means the amount is below the threshold (default USD 0.50). Exit `21`
+   means the snapshot is absent, invalid, or stale (default maximum age:
+   6 hours). Both nonzero results fail closed. `handoff` prints the
+   graceful-stop checklist **unconditionally** — including when the snapshot
+   is missing or stale (the post-duplication state, §7.1) — because the
+   checklist is the point of the command, not a reward for a healthy snapshot.
 4. On a nonzero result, do not begin another step. If a step is already in
    progress, finish only its smallest safe durable unit when possible, then
    perform §3 in order. Run `... budget_sentinel.py handoff` to print the

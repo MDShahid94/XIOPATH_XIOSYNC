@@ -395,3 +395,47 @@
     open — superseded by the canonical-main proof; merge or close at will.
   - Phase 1 not started (budget preservation). Next session boots straight
     into STATE.md "exact next action" step 2.
+
+## Session 017 — Budget sentinel fails loud (D-021); Phase 1 step 2 proof recovered; branch pushed to canonical
+
+- **Date:** 2026-07-15
+- **Scope:** Operator redirection (recorded per SESSION-PROTOCOL §2): the
+  budget stop commands were ineffective — `set 0` gave no stop signal and
+  `handoff` printed no checklist when the snapshot was missing (the normal
+  post-duplication state). Also: ensure the canonical repo has the latest
+  work. Booted into a Session 016 crash (CHECKPOINT IN-PROGRESS, cursor
+  step 2, clean tree); per §5.2 re-ran step 2's proof instead of redoing it.
+- **Produced:**
+  - `tools/budget_sentinel.py`: `set` now evaluates immediately — below
+    threshold prints `decision=handoff-required` + handoff sequence, exit 20;
+    otherwise `decision=continue`, exit 0. `handoff` prints the checklist
+    unconditionally (missing/stale snapshot included,
+    `decision=snapshot-unavailable-fail-closed`, exit 21).
+  - `tests/tools/test_budget_sentinel.py`: contract tests updated + 3 new
+    (set-below-threshold fails loud, set-continue, handoff-with-missing and
+    handoff-with-stale snapshot both print the checklist).
+  - SESSION-PROTOCOL §4.2 items 1 and 3 rewritten to the new contract.
+  - **D-021** appended to DECISIONS.md.
+  - `tests/unit/test_persistence_models.py`: one pre-existing
+    `ruff format` violation from Session 016's committed work fixed
+    (would have failed CI's lint-type-arch job).
+- **Verification (all observed green this session):**
+  - `uv run ruff check .` → "All checks passed!"
+  - `uv run ruff format --check .` → "28 files already formatted"
+  - `uv run mypy --strict tools tests persistence platform xiosync` →
+    "Success: no issues found in 42 source files"
+  - `uv run lint-imports` → "Contracts: 4 kept, 0 broken"
+  - `uv run pytest tests/tools tests/unit -q` → "67 passed"
+  - Live CLI: `set 0` → exit 20 + handoff line; `handoff` (no snapshot) →
+    exit 21 + handoff line; `set 5.0` → exit 0, `decision=continue`.
+  - **Session 016 crash recovery:** the above green suite IS step 2's proof
+    (models + target_metadata committed at `2af19b7`+`cd07d64`) — cursor
+    advanced to step 3.
+- **Not done / known gaps at handoff:**
+  - Phase 1 slice 1 steps 3–5 remain (revision 0002 with RLS +
+    immutability, drift + integration tests, PR into protected `main`).
+  - Integration tests (`tests/integration`) not run this session (no DB
+    needed for the sentinel change); CI on the pushed branch is the
+    authoritative proof.
+  - Operator balance at session end: USD 5.0 (sentinel set; guard →
+    continue).

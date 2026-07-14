@@ -6,15 +6,20 @@
 > not match the newest entry in `HANDOFF-LOG.md`, treat the log as truth and
 > repair this file first.
 
-- **Last updated:** Session 015 — 2026-07-15
+- **Last updated:** Session 017 — 2026-07-15
 - **Repo (canonical, D-020):** `MDShahid94/XIOSYNC_V0` (GitHub; default
   branch `main`; remote `shahid`; managed via `GITHUB_FINE_GRAINED_PAT`).
   The v0-connected repo (`origin`, currently
   `chainaanantapurasha-rgb/XIO_SYNC_V0`) is a working mirror that churns
   with operator credit-cycles — push every step to both, canonical last.
-  Pushing to `shahid` needs the auth header trick: `AUTH=$(printf
-  "x-access-token:%s" "$GITHUB_FINE_GRAINED_PAT" | base64 -w0); git -c
-  http.extraheader="AUTHORIZATION: basic $AUTH" push shahid <ref>`.
+  Pushing needs the PAT, and in a fresh sandbox shell
+  `GITHUB_FINE_GRAINED_PAT` is EMPTY until sourced (it lives in the
+  gitignored `.env.development.local`) — an unsourced push fails with
+  "could not read Username", not an auth error. Always:
+  `set -a; source .env.development.local; set +a; git push
+  "https://x-access-token:${GITHUB_FINE_GRAINED_PAT}@github.com/MDShahid94/XIOSYNC_V0.git"
+  <branch>` (token inline per command; never store it in git config, and
+  pipe push output through `sed "s#${GITHUB_FINE_GRAINED_PAT}#***#g"`).
 
 ---
 
@@ -43,15 +48,16 @@ Phase 1; docs 03, 05, 06). Phase 0 is closed — do not revisit it.
    namespace symlinks and `uv run python -c "import
    xiosync.platform.clock"` works; verify remote `shahid` exists and
    points at the canonical repo per D-020).
-2. First Phase 1 slice (work in dependency order, one migration chain):
-   the five identity tables — `organizations`, `auth_identities`,
-   `memberships`, `sessions`, `actors` — as ORM models in
-   `persistence/`, with immutable `organization_id` (C2) and RLS policies
-   (doc 05 §3.2), delivered as Alembic migrations that pass the existing
-   migration-chain harness (upgrade → downgrade → re-upgrade). Wiring
-   ORM metadata also unblocks the deferred autogenerate-drift half of
-   INV-TEST-SCHEMA-2 (`target_metadata` in
-   `persistence/migrations/env.py`) — close it in the same slice.
+2. First Phase 1 slice — **in progress on branch `phase1/identity-tables`**
+   (CHECKPOINT.md holds the step plan; cursor at step 3). Steps 1–2 are
+   done and proven (Session 017): the five identity tables —
+   `organizations`, `auth_identities`, `memberships`, `sessions`,
+   `actors` — exist as ORM models in `persistence/models/` with
+   `target_metadata` wired in `persistence/migrations/env.py`
+   (INV-TEST-SCHEMA-2 drift half). Remaining: Alembic revision 0002 with
+   immutable `organization_id` (C2) and RLS policies (doc 05 §3.2)
+   passing the migration-chain harness; drift + RLS integration tests;
+   PR into protected canonical `main`.
 3. Then, in later slices: OrgContext middleware (C1), session lifecycle
    (C8), authority axes (H4/H8), single `authorize(...)` decision point
    (C3). Exit gate = the security-negative suite (doc 05 §8, doc 11).

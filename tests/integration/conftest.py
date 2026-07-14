@@ -20,11 +20,37 @@ from __future__ import annotations
 import os
 import uuid
 from collections.abc import Iterator
+from contextlib import contextmanager
+from pathlib import Path
 
 import pytest
+from alembic import command
+from alembic.config import Config
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
 from xiosync.persistence.database import validated_psycopg_url
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+ALEMBIC_INI = REPO_ROOT / "alembic.ini"
+
+# Deterministic throwaway credential for the per-test application role. It
+# authenticates only against the per-test scratch database created below and
+# the role is dropped in teardown — it protects nothing and is not a secret.
+_APP_ROLE_PASSWORD = "xiosync-integration-test"
+
+
+@contextmanager
+def database_url_env(url: str) -> Iterator[None]:
+    """Temporarily point ``DATABASE_URL`` (env.py's only source) at ``url``."""
+    original = os.environ.get("DATABASE_URL")
+    os.environ["DATABASE_URL"] = url
+    try:
+        yield
+    finally:
+        if original is None:
+            del os.environ["DATABASE_URL"]
+        else:
+            os.environ["DATABASE_URL"] = original
 
 
 def _admin_url() -> str:
@@ -57,3 +83,56 @@ def scratch_database_url() -> Iterator[str]:
                 connection.execute(text(f'DROP DATABASE IF EXISTS "{scratch_name}" WITH (FORCE)'))
     finally:
         admin_engine.dispose()
+
+
+@pytest.fixture()
+def migrated_database_url(scratch_database_url: str) -> str:
+    """A scratch database migrated to the chain's head via Alembic only.
+
+    The schema comes exclusively from ``persistence/migrations/``
+    (INV-SCHEMA-1); this fixture issues no DDL of its own.
+    """
+    with database_url_env(scratch_database_url):
+        command.upgrade(Config(str(ALEMBIC_INI)), "head")
+    return scratch_database_url
+
+
+@pytest.fixture()
+def app_role_database_url(migrated_database_url: str) -> Iterator[str]:
+    """URL connecting to the migrated scratch DB as a plain application role.
+
+    RLS is invisible to superusers and ``BYPASSRLS`` roles by PostgreSQL
+    design, so proving isolation (doc 05 §3.2) requires a role with neither.
+    Role creation here is test *infrastructure* (like the scratch database),
+    not schema fabrication — no table DDL is issued (INV-TEST-SCHEMA-1).
+    """
+    url = make_url(migrated_database_url)
+    role_name = f"xiosync_app_{uuid.uuid4().hex}"
+
+    engine = create_engine(url, isolation_level="AUTOCOMMIT")
+    try:
+        with engine.connect() as connection:
+            # role_name is generated from uuid4 hex above — not user input.
+            connection.execute(
+                text(
+                    f"CREATE ROLE \"{role_name}\" LOGIN PASSWORD '{_APP_ROLE_PASSWORD}' "
+                    "NOSUPERUSER NOBYPASSRLS"
+                )
+            )
+            connection.execute(text(f'GRANT USAGE ON SCHEMA public TO "{role_name}"'))
+            connection.execute(
+                text(
+                    "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES "
+                    f'IN SCHEMA public TO "{role_name}"'
+                )
+            )
+        try:
+            yield url.set(username=role_name, password=_APP_ROLE_PASSWORD).render_as_string(
+                hide_password=False
+            )
+        finally:
+            with engine.connect() as connection:
+                connection.execute(text(f'DROP OWNED BY "{role_name}"'))
+                connection.execute(text(f'DROP ROLE "{role_name}"'))
+    finally:
+        engine.dispose()

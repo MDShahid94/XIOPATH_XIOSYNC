@@ -18,10 +18,12 @@ import os
 from alembic import context
 from sqlalchemy import create_engine
 from xiosync.persistence.database import validated_psycopg_url
+from xiosync.persistence.models import Base
 
-# No ORM models exist yet (Phase 0): the chain starts from an explicit
-# baseline revision. When models land (Phase 1+), this becomes their metadata.
-target_metadata = None
+# The declarative metadata (persistence/models). The autogenerate-diff-must-
+# be-empty CI gate (INV-TEST-SCHEMA-2) compares the migrated database against
+# exactly this object.
+target_metadata = Base.metadata
 
 
 def _database_url() -> str:
