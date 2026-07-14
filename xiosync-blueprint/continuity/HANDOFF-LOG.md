@@ -317,3 +317,49 @@
   branch protection must mark all three jobs required (then record the run
   ID per D-017). Gate 10 (secret scan) scanner choice deferred to that same
   moment. Autogenerate-drift check still deferred to Phase 1+ (ORM models).
+---
+
+## Session 014 — CI proven green on GitHub (Phase 0 exit-gate proof, D-017)
+
+- **Date:** 2026-07-15
+- **Scope:** Booted per AGENTS.md (`BUDGET USD 9.71`; sentinel set, guard →
+  `decision=continue`). CHECKPOINT was IN-PROGRESS (session 013) → §5 crash
+  recovery. Recovered from crashed session 013 at step 2: the workspace was
+  credit-cycle duplicated into a NEW GitHub repo
+  (`chainaanantapurasha-rgb/XIO_SYNC_V0`, default branch `main`) with history
+  squashed to 2 commits — 013's step-1 commit (`5c73927`) was lost, but the
+  tracked `ci.yml.pending` survived and already carried the
+  `push.branches: [main]` fix, so step 1 was redone cheaply, not re-derived.
+- **Produced (branch `v0/shahidraiganj-7383-804ea72a`, PR #1):**
+  - `f50063f` — moved `ci.yml.pending` → `.github/workflows/ci.yml`
+    (3 jobs: lint-type-arch, unit, migration-chain; push targets `main`);
+    re-hardened the duplicate's depleted `.gitignore` (sentinel snapshot,
+    `.env*`, venv/caches — an accidental `.continuity-budget.json` stage was
+    caught and removed before push).
+  - `1e2c9ec` — **fix(packaging):** the `xiosync/*` namespace symlinks
+    (D-019: platform, persistence, domain, services, api → repo root) had
+    never been git-tracked; every CI job failed with
+    `ModuleNotFoundError: xiosync.platform / xiosync.persistence`. Symlinks
+    committed; git stores them as symlinks and Actions checkout restores
+    them.
+- **Verification:**
+  - Local at `1e2c9ec`: `uv run pytest tests/unit tests/tools -q` →
+    `55 passed`; `ruff check .` → `All checks passed!`; `ruff format
+    --check .` → `24 files already formatted`; `mypy --strict platform
+    tests tools persistence` → `Success: no issues found in 21 source
+    files`; `lint-imports` → `Contracts: 4 kept, 0 broken.`
+  - **GitHub (D-017 exit-gate proof): run `29367288883`,
+    `conclusion=success`, SHA `1f84669`, event `pull_request` (PR #1) —
+    all three jobs green: lint-type-arch 18s, unit 14s, migration-chain
+    28s** (first run `29367064597` red = the symlink defect above).
+  - Budget guard at each step boundary → `decision=continue`.
+- **Decisions:** none new (executed per D-016/D-017/D-019).
+- **Not done / known gaps at handoff (operator items):**
+  1. Merge PR #1 into `main` (merging fires the push-trigger run on main —
+     record it if branch protection requires proof on main itself).
+  2. Configure branch protection on `main` requiring all three jobs
+     (lint-type-arch, unit, migration-chain) — D-016 blocking precondition.
+  3. Choose the Gate 10 secret scanner (doc 09 §7) now that pushes are real.
+  Once 1–2 are done, the Phase 0 exit gate (doc 10) is closed and Phase 1
+  (domain ontology, doc 03) opens. Autogenerate-drift check still deferred
+  to Phase 1+ (ORM models; `target_metadata` is `None`).
