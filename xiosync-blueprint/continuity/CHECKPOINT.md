@@ -5,29 +5,12 @@
 > agent killed mid-task loses at most ONE step of work. Rules in
 > SESSION-PROTOCOL.md §5. Keep it under ~25 lines — it is a cursor, not a log.
 
-- **Status:** IN-PROGRESS
-- **Session:** 014
-- **Task:** Phase 0 exit-gate proof (recovered from crashed session 013).
-- **Recovery findings:** workspace was credit-cycle duplicated into a NEW
-  repo `chainaanantapurasha-rgb/XIO_SYNC_V0` (history squashed to `b4bb356`
-  + `aaa3f22`); session 013's step-1 commit (`5c73927`) is gone. The tracked
-  `ci.yml.pending` survived and already carries the `push.branches: [main]`
-  fix. Sentinel set 9.71, guard → continue. gh CLI authenticated; repo
-  default branch `main`.
-- **Step plan:**
-  1. Redo 013-step-1: copy `ci.yml.pending` → `.github/workflows/ci.yml`,
-     delete pending, verify yaml parse + job list, commit on head branch
-     `v0/shahidraiganj-7383-804ea72a` (never commit to main directly).
-  2. Push the head branch; open PR to `main` (pull_request trigger fires
-     CI). If push rejects workflow files (token scope), fall back to
-     restoring ci.yml.pending + operator instruction.
-  3. Poll PR check-runs until all 3 jobs conclude; record green run ID +
-     SHA per D-017. If red, fix and repeat.
-  4. Handoff per §3 (operator items: merge PR, branch protection requiring
-     all 3 jobs, Gate 10 scanner choice); checkpoint → IDLE.
-- **Cursor:** step 3. Step 1 proof: yaml ok, 3 jobs, push branches
-  ['main']; commit `f50063f`. Step 2: pushed; PR #1 open. First run
-  29367064597 red — the `xiosync/*` namespace symlinks (D-019) were never
-  git-tracked, so all jobs hit ModuleNotFoundError. Fixed in `1e2c9ec`
-  (symlinks committed; local gates re-proven: 55 unit/tools passed, ruff,
-  format, mypy --strict, lint-imports all green). Awaiting second run.
+- **Status:** IDLE
+- **Session:** 014 (handed off cleanly)
+- **Last completed:** Phase 0 exit-gate proof — CI green on GitHub
+  (D-017): run `29367288883`, SHA `1f84669`, PR #1 on
+  `chainaanantapurasha-rgb/XIO_SYNC_V0`. See HANDOFF-LOG Session 014.
+- **Next:** operator merges PR #1 + branch protection (D-016) + Gate 10
+  scanner choice; then the next session verifies the push run on `main`,
+  flips Phase 0 to ✅, and opens Phase 1. Details in STATE.md §"The exact
+  next action".
