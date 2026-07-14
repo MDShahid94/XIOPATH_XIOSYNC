@@ -1,0 +1,17 @@
+
+# local budget sentinel snapshot (SESSION-PROTOCOL §4.2) — never commit
+.continuity-budget.json
+
+# secrets — restore path is the integration/operator, never a committed copy
+.env
+.env*.local
+
+# generated / dependency dirs
+.venv/
+node_modules/
+.next/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
