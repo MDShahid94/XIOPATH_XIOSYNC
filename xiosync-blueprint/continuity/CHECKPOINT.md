@@ -25,7 +25,9 @@
      SHA per D-017. If red, fix and repeat.
   4. Handoff per §3 (operator items: merge PR, branch protection requiring
      all 3 jobs, Gate 10 scanner choice); checkpoint → IDLE.
-- **Cursor:** step 2. Step 1 proof: `yaml ok; jobs: ['lint-type-arch',
-  'unit', 'migration-chain']; push branches: ['main']`; commit `f50063f`
-  on branch `v0/shahidraiganj-7383-804ea72a` (also re-hardened .gitignore:
-  sentinel snapshot, .env*, venv/caches — the duplicate had lost them).
+- **Cursor:** step 3. Step 1 proof: yaml ok, 3 jobs, push branches
+  ['main']; commit `f50063f`. Step 2: pushed; PR #1 open. First run
+  29367064597 red — the `xiosync/*` namespace symlinks (D-019) were never
+  git-tracked, so all jobs hit ModuleNotFoundError. Fixed in `1e2c9ec`
+  (symlinks committed; local gates re-proven: 55 unit/tools passed, ruff,
+  format, mypy --strict, lint-imports all green). Awaiting second run.
