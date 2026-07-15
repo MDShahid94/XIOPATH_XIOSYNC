@@ -486,3 +486,47 @@
     (STATE.md item 4).
   - Local DB (`/tmp/pgdata`) and `.env.development.local` DATABASE_URL are
     sandbox-only; a duplicated workspace must redo the §7.1 restore.
+
+## Session 022 — Sentinel time-decay fix (D-024); crashed session 021 recovered at step 4
+
+- **Date:** 2026-07-15
+- **Scope:** Booted into IN-PROGRESS checkpoint from session 021 (budget
+  USD 5.0). Crash recovery per §5.2: cursor said step 4, but `a656f10`
+  (platform/tokens.py PyJWT HS256 + XIOSYNC_AUTH_SECRET config + D-023 +
+  117-line unit suite) was already committed — the crash was between the
+  commit and the cursor advance; nothing lost. Operator directive this
+  session: fix that `set`/`guard` treated one snapshot as
+  valid-until-stale ("not instantly effective"); the boundary must move
+  automatically between sets. Executed as step 5 (inserted before the
+  session-lifecycle work).
+- **Produced:**
+  - `tools/budget_sentinel.py` rewritten: time-decayed effective balance
+    (`effective = amount − burn_rate × hours`, floored at 0), burn rate
+    auto-calibrated from consecutive `set` calls (60 s minimum, top-ups
+    ignored), `--burn-rate` override (persisted on `set`, ephemeral on
+    reads, 0 disables), legacy snapshots readable. Commit `440892d`.
+  - `tests/tools/test_budget_sentinel.py`: 26 tests (9 new decay/
+    calibration/override cases).
+  - `DECISIONS.md` D-024; SESSION-PROTOCOL §4.2 rewritten (new rule 4).
+- **Verification:**
+  - Step-4 proof re-run (recovery): `uv run pytest tests/unit tests/tools
+    -q` → 90 passed; ruff + format --check + mypy --strict clean on
+    tokens/config.
+  - Step 5: ruff + format + `mypy --strict tools/budget_sentinel.py`
+    clean; `pytest tests/tools -q` → **26 passed**.
+  - Live proof of the fix: operator re-set to 1.0 then 0.5 mid-session;
+    guard computed burn ≈29–44 USD/h and returned exit 20
+    `decision=handoff-required` — this handoff is the sentinel working.
+- **Decisions:** D-024 (sentinel decay). D-023 (session 021, PyJWT
+  HS256) was already in DECISIONS.md via `a656f10`.
+- **Not done / known gaps at handoff:**
+  - Steps 6–8 of the CHECKPOINT plan untouched: persistence/identity.py +
+    services/identity.py SessionService (INV-SESSION-1/-2/-3), api/app.py
+    + middleware + auth router, full gate + push + PR.
+  - Branch `phase1/sessions-middleware` is LOCAL-ONLY (commits `6deaccc`..
+    `440892d` + IDLE checkpoint commit unpushed); local main `4ab62f9` is
+    also ahead of canonical `deda247` by the STATE.md docs commit. A
+    duplicated workspace carries these via git; a fresh clone of canonical
+    does NOT.
+  - Local Postgres NOT provisioned in this sandbox — successor must run
+    the §7.1 drill (UTF8 cluster) before step-6 integration tests.

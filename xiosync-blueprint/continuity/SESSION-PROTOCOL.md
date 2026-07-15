@@ -77,17 +77,31 @@ snapshot.
 2. After boot/crash recovery and at every checkpoint step boundary, run
    `uv run python tools/budget_sentinel.py guard`.
 3. For `set`, `guard`, `status`, and `handoff`, exit `0` means continue. Exit
-   `20` means the amount is below the threshold (default USD 0.50). Exit `21`
-   means the snapshot is absent, invalid, or stale (default maximum age:
-   6 hours). Both nonzero results fail closed. `handoff` prints the
-   graceful-stop checklist **unconditionally** — including when the snapshot
-   is missing or stale (the post-duplication state, §7.1) — because the
-   checklist is the point of the command, not a reward for a healthy snapshot.
-4. On a nonzero result, do not begin another step. If a step is already in
+   `20` means the **effective balance** is below the threshold (default USD
+   1.50). Exit `21` means the snapshot is absent, invalid, or stale (default
+   maximum age: 6 hours). Both nonzero results fail closed. `handoff` prints
+   the graceful-stop checklist **unconditionally** — including when the
+   snapshot is missing or stale (the post-duplication state, §7.1) — because
+   the checklist is the point of the command, not a reward for a healthy
+   snapshot.
+4. **Time decay (D-024).** The stored amount is not valid-until-stale: every
+   decision command evaluates `effective = amount − burn_rate ×
+   hours_elapsed` (floored at 0), so the handoff boundary advances on its
+   own between operator `set` calls. The burn rate (USD/hour) is
+   auto-calibrated from the spend observed between consecutive `set` calls
+   (re-sets under 60 s and top-ups are ignored) and stored in the snapshot;
+   until first calibration a default of 1.00 USD/hour applies. Override per
+   invocation with `--burn-rate <usd_per_hour>` (before the command name):
+   persisted by `set`, ephemeral for `guard`/`status`/`handoff`;
+   `--burn-rate 0` disables decay. Consequence: even with a healthy
+   snapshot, a long session WILL cross the boundary — that is the intended
+   fail-closed behavior, not an error. `status` prints `effective_usd` and
+   `burn_rate_usd_per_hour` so agents can see the projection.
+5. On a nonzero result, do not begin another step. If a step is already in
    progress, finish only its smallest safe durable unit when possible, then
    perform §3 in order. Run `... budget_sentinel.py handoff` to print the
    checklist. Set CHECKPOINT to IDLE as the final continuity edit and stop.
-5. Another authorized account or agent is started manually with the resume
+6. Another authorized account or agent is started manually with the resume
    prompt in AGENTS.md. Never rotate credentials or accounts automatically.
 
 Threshold and freshness can be changed per invocation with `--threshold` and

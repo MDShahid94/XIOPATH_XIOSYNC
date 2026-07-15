@@ -5,9 +5,12 @@ from __future__ import annotations
 import pytest
 from xiosync.platform.config import Config, ConfigError, Environment, load_config
 
+_TEST_AUTH_SECRET = "unit-test-signing-secret-0123456789abcdef"  # >=32 chars
+
 VALID_ENV = {
     "XIOSYNC_ENVIRONMENT": "dev",
     "DATABASE_URL": "postgresql+psycopg://user:pw@host:5432/xiosync",
+    "XIOSYNC_AUTH_SECRET": _TEST_AUTH_SECRET,
 }
 
 
@@ -17,6 +20,7 @@ def test_valid_config_loads_with_defaulted_log_level() -> None:
         environment=Environment.DEV,
         database_url="postgresql+psycopg://user:pw@host:5432/xiosync",
         log_level="INFO",
+        auth_secret=_TEST_AUTH_SECRET,
     )
 
 
@@ -34,7 +38,14 @@ def test_plain_postgresql_scheme_is_accepted() -> None:
     assert config.database_url == "postgresql://u:p@h/db"
 
 
-@pytest.mark.parametrize("missing_key", ["XIOSYNC_ENVIRONMENT", "DATABASE_URL"])
+def test_short_auth_secret_fails() -> None:
+    with pytest.raises(ConfigError, match="XIOSYNC_AUTH_SECRET"):
+        load_config({**VALID_ENV, "XIOSYNC_AUTH_SECRET": "too-short"})
+
+
+@pytest.mark.parametrize(
+    "missing_key", ["XIOSYNC_ENVIRONMENT", "DATABASE_URL", "XIOSYNC_AUTH_SECRET"]
+)
 def test_missing_required_key_fails(missing_key: str) -> None:
     env = {key: value for key, value in VALID_ENV.items() if key != missing_key}
     with pytest.raises(ConfigError, match=missing_key):

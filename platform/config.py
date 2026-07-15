@@ -27,8 +27,13 @@ ENV_PREFIX = "XIOSYNC_"
 _KEY_ENVIRONMENT = "XIOSYNC_ENVIRONMENT"
 _KEY_LOG_LEVEL = "XIOSYNC_LOG_LEVEL"
 _KEY_DATABASE_URL = "DATABASE_URL"
+_KEY_AUTH_SECRET = "XIOSYNC_AUTH_SECRET"  # noqa: S105 — env-var *name*, not a secret
 
-_KNOWN_PREFIXED_KEYS = frozenset({_KEY_ENVIRONMENT, _KEY_LOG_LEVEL})
+# Signing secrets shorter than this are guessable; 32 bytes of entropy
+# rendered as text is the operational floor (doc 05 §2.2; L4 — no default).
+_MIN_AUTH_SECRET_LENGTH = 32
+
+_KNOWN_PREFIXED_KEYS = frozenset({_KEY_ENVIRONMENT, _KEY_LOG_LEVEL, _KEY_AUTH_SECRET})
 
 _ALLOWED_DATABASE_SCHEMES = frozenset({"postgresql", "postgresql+psycopg"})
 
@@ -57,6 +62,7 @@ class Config:
     environment: Environment
     database_url: str
     log_level: str
+    auth_secret: str
 
 
 def _require(env: Mapping[str, str], key: str) -> str:
@@ -106,9 +112,22 @@ def load_config(env: Mapping[str, str] | None = None) -> Config:
 
     database_url = _validate_database_url(_require(source, _KEY_DATABASE_URL))
 
+    auth_secret = _require(source, _KEY_AUTH_SECRET)
+    if len(auth_secret) < _MIN_AUTH_SECRET_LENGTH:
+        raise ConfigError(
+            f"{_KEY_AUTH_SECRET} must be at least {_MIN_AUTH_SECRET_LENGTH} "
+            "characters (doc 05 §2.2); generate one with e.g. "
+            "`openssl rand -base64 48`"
+        )
+
     log_level = source.get(_KEY_LOG_LEVEL, _DEFAULT_LOG_LEVEL).strip().upper()
     if log_level not in _ALLOWED_LOG_LEVELS:
         allowed = ", ".join(sorted(_ALLOWED_LOG_LEVELS))
         raise ConfigError(f"{_KEY_LOG_LEVEL} must be one of [{allowed}]; got {log_level!r}")
 
-    return Config(environment=environment, database_url=database_url, log_level=log_level)
+    return Config(
+        environment=environment,
+        database_url=database_url,
+        log_level=log_level,
+        auth_secret=auth_secret,
+    )

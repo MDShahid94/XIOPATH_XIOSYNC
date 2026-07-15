@@ -319,6 +319,90 @@
 
 ---
 
+## D-022 — Budget sentinel default threshold raised to USD 1.50
+
+- **Status:** Accepted
+- **Decision:** `DEFAULT_THRESHOLD` in `tools/budget_sentinel.py` is raised
+  from USD 0.50 to USD 1.50. Contract tests and SESSION-PROTOCOL §4.2 item 3
+  updated to match. Per-invocation `--threshold` overrides remain available.
+- **Rationale:** Operator directive in the Session 021 resume prompt
+  ("MODIFY threshold_usd FROM 0.50 TO 1.50"). USD 0.50 left too little
+  headroom to execute the full graceful handoff (§3: log entry, STATE.md
+  rewrite, commits, CHECKPOINT IDLE) before credits ran out; USD 1.50
+  triggers the handoff while enough budget remains to complete it.
+- **Alternatives rejected:** leaving the default and requiring the operator
+  to pass `--threshold 1.50` on every invocation (error-prone, and the
+  protocol quotes the default as the norm).
+- **Consequences:** `set`/`guard`/`status` now exit `20` for any snapshot
+  below USD 1.50; operators reporting balances in the 0.50–1.49 range will
+  trigger a handoff that previously would have continued.
+
+---
+
+## D-023 — Access tokens are PyJWT HS256 *session pointers*; `XIOSYNC_AUTH_SECRET` required (Phase 1)
+
+- **Status:** Accepted (Session 021)
+- **Decision:** The session slice implements doc 05 §2.2 exactly: server-side
+  `sessions` rows (already in the merged schema: `refresh_token_hash`,
+  `access_token_jti` — revision 0002) plus short-lived HS256 access tokens
+  signed/verified with **PyJWT** (`pyjwt>=2.9,<3`) in `platform/tokens.py`.
+  Hard 15-minute TTL cap; required claims `jti/sid/org/act/iat/exp`; expiry
+  checked against the injected clock so tests control time. The signing
+  secret is the new **required** config key `XIOSYNC_AUTH_SECRET` (min 32
+  chars, no default — L4).
+- **Relationship to D-005:** not a contradiction — a refinement. D-005's
+  rationale (C8: JWTs make revocation eventual) is neutralized because
+  INV-SESSION-1 validates every access token against its `active` session
+  row on every request: the JWT carries no authority, only a signed pointer
+  at a revocable session. D-005's transport rule stands: browser delivery is
+  HttpOnly/Secure/SameSite cookies; tokens never touch browser storage (M2).
+  D-004 also stands: grants are read at decision time, never from tokens.
+- **Context:** doc 05 §2.2 (token & session lifecycle); merged revision 0002
+  already shipped the hybrid schema; doc 05 §2.3 permits cookie transport.
+- **Alternatives rejected:** pure opaque cookie session ID with no access
+  token (contradicts the merged 0002 schema and doc 05 §2.2's refresh
+  rotation/theft detection — INV-SESSION-3); python-jose (heavier, historic
+  CVEs); hand-rolled stdlib HS256 (reinvents a spec to save one dep); EdDSA
+  now (key-management burden, no v1 consumer).
+- **Consequences:** every environment must set `XIOSYNC_AUTH_SECRET`; config
+  loading fails fast without it. Secret rotation invalidates all access
+  tokens at once (sessions survive; refresh re-issues). A per-request
+  session lookup is accepted; the doc 05 §2.2 short-TTL cache (≤30s) may be
+  added later without changing this contract.
+
+---
+
+## D-024 — Budget sentinel decays the effective balance over time (auto-calibrated burn rate)
+
+- **Status:** Accepted (Session 022)
+- **Decision:** `tools/budget_sentinel.py` no longer treats an operator `set`
+  as valid-until-stale. Every decision command (`guard`/`status`/`handoff`)
+  evaluates a **decayed effective balance**: `effective = stored_amount −
+  burn_rate × hours_elapsed` (floored at 0). The burn rate (USD/hour) is
+  auto-calibrated from consecutive `set` calls (observed spend ÷ elapsed
+  time, ignoring re-sets under 60 s and top-ups) and stored in the snapshot;
+  `--burn-rate` overrides it per invocation (persisted on `set`, ephemeral
+  on read commands; `--burn-rate 0` disables decay). Default until first
+  calibration: 1.00 USD/hour.
+- **Context:** Operator directive (Session 022): a single `set` made `guard`
+  answer "continue" for the full 6-hour staleness window even though credits
+  were being consumed the whole time, so the handoff boundary only moved
+  when the operator remembered to re-`set`. That defeated the sentinel's
+  purpose during long sessions.
+- **Alternatives rejected:** shrinking `--max-age-hours` (binary stale/fresh
+  cliff, still no moving boundary within the window); counting agent tool
+  calls or steps as a spend proxy (unmeasurable from a stateless CLI, and
+  the snapshot must stay meaningful across process restarts); querying v0
+  billing (no authoritative API is available to the sandbox — the sentinel
+  is explicitly not a billing client).
+- **Consequences:** the effective balance shown by `status` is an estimate,
+  intentionally conservative; a session that outlives its projected budget
+  hands off early rather than late (fail-closed bias preserved). Snapshots
+  written by older versions (no `burn_rate_usd_per_hour` field) still read,
+  decaying at the default rate. SESSION-PROTOCOL §4.2 updated accordingly.
+
+---
+
 ## Deferred decisions
 
 ## D-101 — Database-per-tenant isolation
