@@ -7,6 +7,7 @@ model module MUST be imported here.
 
 from __future__ import annotations
 
+from xiosync.persistence.models.authorization import Capability, Event, Grant
 from xiosync.persistence.models.base import Base
 from xiosync.persistence.models.identity import (
     Actor,
@@ -20,6 +21,9 @@ __all__ = [
     "Actor",
     "AuthIdentity",
     "Base",
+    "Capability",
+    "Event",
+    "Grant",
     "Membership",
     "Organization",
     "Session",

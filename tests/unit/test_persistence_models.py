@@ -20,7 +20,16 @@ from xiosync.persistence.models.identity import (
     Session,
 )
 
-EXPECTED_TABLES = {"organizations", "actors", "auth_identities", "memberships", "sessions"}
+EXPECTED_TABLES = {
+    "organizations",
+    "auth_identities",
+    "memberships",
+    "sessions",
+    "actors",
+    "capabilities",
+    "grants",
+    "events",
+}
 
 # organizations IS the tenant root; it carries no organization_id (doc 06 §5).
 TENANT_BEARING = EXPECTED_TABLES - {"organizations"}
