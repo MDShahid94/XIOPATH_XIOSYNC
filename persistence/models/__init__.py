@@ -16,15 +16,27 @@ from xiosync.persistence.models.identity import (
     Organization,
     Session,
 )
+from xiosync.persistence.models.ontology import (
+    Edge,
+    Memory,
+    TypeRegistry,
+    TypeRegistryAlias,
+)
+from xiosync.persistence.models.operations import Operation
 
 __all__ = [
     "Actor",
     "AuthIdentity",
     "Base",
     "Capability",
+    "Edge",
     "Event",
     "Grant",
     "Membership",
+    "Memory",
+    "Operation",
     "Organization",
     "Session",
+    "TypeRegistry",
+    "TypeRegistryAlias",
 ]

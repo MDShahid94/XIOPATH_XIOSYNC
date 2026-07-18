@@ -29,10 +29,16 @@ EXPECTED_TABLES = {
     "capabilities",
     "grants",
     "events",
+    "type_registry",
+    "type_registry_aliases",
+    "operations",
+    "edges",
+    "memory",
 }
 
 # organizations IS the tenant root; it carries no organization_id (doc 06 §5).
-TENANT_BEARING = EXPECTED_TABLES - {"organizations"}
+# type_registry and type_registry_aliases use a global nullable organization_id for core.*.
+TENANT_BEARING = EXPECTED_TABLES - {"organizations", "type_registry", "type_registry_aliases"}
 
 
 def _tables() -> dict[str, Table]:
