@@ -14,6 +14,7 @@ dependencies = [
     "cryptography>=43",
     "argon2-cffi>=23",
     "pyjwt>=2.9,<3",
+    "email-validator>=2,<3",
 ]
 
 [dependency-groups]
@@ -72,6 +73,18 @@ name = "RULE-ARCH-2: api never imports persistence directly"
 type = "forbidden"
 source_modules = ["xiosync.api"]
 forbidden_modules = ["xiosync.persistence"]
+# Phase 1 Step 7's composition root wires persistence, and its authentication
+# middleware must enter the canonical tenant boundary. Routers remain blocked.
+ignore_imports = [
+    "xiosync.api.app -> xiosync.persistence.database",
+    "xiosync.api.app -> xiosync.persistence.identity",
+    "xiosync.api.app -> xiosync.services.identity",
+    "xiosync.api.middleware -> xiosync.persistence.tenancy",
+    # Import-linter's forbidden contract follows transitive dependencies;
+    # this is the sanctioned router -> service -> repository layer path.
+    "xiosync.api.routers.auth -> xiosync.services.identity",
+    "xiosync.api.middleware -> xiosync.services.identity",
+]
 
 [[tool.importlinter.contracts]]
 name = "RULE-ARCH-1: domain is framework-free (no web/DB imports)"
