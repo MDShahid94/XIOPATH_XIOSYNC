@@ -22,9 +22,10 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Any, cast
 
 from sqlalchemy import select, text, update
-from sqlalchemy.engine import Engine
+from sqlalchemy.engine import CursorResult, Engine
 from sqlalchemy.orm import Session as OrmSession
 from xiosync.persistence.models.identity import AuthIdentity, Membership
 from xiosync.persistence.models.identity import Session as SessionRow
@@ -124,7 +125,12 @@ class IdentityRepository:
         self, organization_id: uuid.UUID, auth_identity_id: uuid.UUID
     ) -> IdentityRecord | None:
         with self._org_transaction(organization_id) as session:
-            row = session.get(AuthIdentity, auth_identity_id)
+            row = session.scalars(
+                select(AuthIdentity).where(
+                    AuthIdentity.organization_id == organization_id,
+                    AuthIdentity.id == auth_identity_id,
+                )
+            ).one_or_none()
             return None if row is None else _identity_record(row)
 
     def record_failed_attempt(
@@ -140,7 +146,10 @@ class IdentityRepository:
         with self._org_transaction(organization_id) as session:
             session.execute(
                 update(AuthIdentity)
-                .where(AuthIdentity.id == auth_identity_id)
+                .where(
+                    AuthIdentity.organization_id == organization_id,
+                    AuthIdentity.id == auth_identity_id,
+                )
                 .values(failed_attempts=failed_attempts, locked_until=locked_until, updated_at=now)
             )
 
@@ -150,7 +159,10 @@ class IdentityRepository:
         with self._org_transaction(organization_id) as session:
             session.execute(
                 update(AuthIdentity)
-                .where(AuthIdentity.id == auth_identity_id)
+                .where(
+                    AuthIdentity.organization_id == organization_id,
+                    AuthIdentity.id == auth_identity_id,
+                )
                 .values(failed_attempts=0, locked_until=None, updated_at=now)
             )
 
@@ -193,7 +205,12 @@ class IdentityRepository:
         self, organization_id: uuid.UUID, session_id: uuid.UUID
     ) -> SessionRecord | None:
         with self._org_transaction(organization_id) as session:
-            row = session.get(SessionRow, session_id)
+            row = session.scalars(
+                select(SessionRow).where(
+                    SessionRow.organization_id == organization_id,
+                    SessionRow.id == session_id,
+                )
+            ).one_or_none()
             return None if row is None else _session_record(row)
 
     def rotate_refresh_token_hash(
@@ -201,16 +218,35 @@ class IdentityRepository:
         organization_id: uuid.UUID,
         session_id: uuid.UUID,
         *,
+        expected_refresh_token_hash: str,
         refresh_token_hash: str,
         now: datetime,
-    ) -> None:
-        """Store the rotated hash; the old one is thereby invalidated."""
+    ) -> bool:
+        """Atomically rotate only the current hash of an active session.
+
+        The compare-and-swap closes the concurrent-refresh race: at most one
+        presenter can replace a given hash. A loser is therefore refresh-token
+        reuse and the service revokes the session family (INV-SESSION-3).
+        """
         with self._org_transaction(organization_id) as session:
-            session.execute(
-                update(SessionRow)
-                .where(SessionRow.id == session_id)
-                .values(refresh_token_hash=refresh_token_hash, last_used_at=now, updated_at=now)
+            result = cast(
+                CursorResult[Any],
+                session.execute(
+                    update(SessionRow)
+                    .where(
+                        SessionRow.organization_id == organization_id,
+                        SessionRow.id == session_id,
+                        SessionRow.state == _SESSION_STATE_ACTIVE,
+                        SessionRow.refresh_token_hash == expected_refresh_token_hash,
+                    )
+                    .values(
+                        refresh_token_hash=refresh_token_hash,
+                        last_used_at=now,
+                        updated_at=now,
+                    )
+                ),
             )
+            return result.rowcount == 1
 
     def revoke_session(
         self, organization_id: uuid.UUID, session_id: uuid.UUID, *, now: datetime
@@ -218,7 +254,11 @@ class IdentityRepository:
         with self._org_transaction(organization_id) as session:
             session.execute(
                 update(SessionRow)
-                .where(SessionRow.id == session_id)
+                .where(
+                    SessionRow.organization_id == organization_id,
+                    SessionRow.id == session_id,
+                    SessionRow.state == _SESSION_STATE_ACTIVE,
+                )
                 .values(state=_SESSION_STATE_REVOKED, revoked_at=now, updated_at=now)
             )
 
@@ -227,12 +267,16 @@ class IdentityRepository:
     ) -> int:
         """Revoke every active session of one identity (INV-SESSION-2)."""
         with self._org_transaction(organization_id) as session:
-            result = session.execute(
-                update(SessionRow)
-                .where(
-                    SessionRow.auth_identity_id == auth_identity_id,
-                    SessionRow.state == _SESSION_STATE_ACTIVE,
-                )
-                .values(state=_SESSION_STATE_REVOKED, revoked_at=now, updated_at=now)
+            result = cast(
+                CursorResult[Any],
+                session.execute(
+                    update(SessionRow)
+                    .where(
+                        SessionRow.organization_id == organization_id,
+                        SessionRow.auth_identity_id == auth_identity_id,
+                        SessionRow.state == _SESSION_STATE_ACTIVE,
+                    )
+                    .values(state=_SESSION_STATE_REVOKED, revoked_at=now, updated_at=now)
+                ),
             )
-            return int(result.rowcount)
+            return result.rowcount

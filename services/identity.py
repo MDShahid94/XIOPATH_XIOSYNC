@@ -209,12 +209,23 @@ class SessionService:
         self._check_identity_usable(identity, now=now)
 
         new_refresh_token = _mint_refresh_token(session_id, organization_id)
-        self._repository.rotate_refresh_token_hash(
+        rotated = self._repository.rotate_refresh_token_hash(
             organization_id,
             session_id,
+            expected_refresh_token_hash=presented,
             refresh_token_hash=_hash_refresh_token(new_refresh_token),
             now=now,
         )
+        if not rotated:
+            # Another presenter won the compare-and-swap. The token was reused
+            # concurrently, so revoke the family exactly as for serial reuse.
+            self._repository.revoke_session(organization_id, session_id, now=now)
+            _logger.critical(
+                "auth_event: concurrent refresh-token reuse detected — session family revoked",
+                extra={"session_id": str(session_id)},
+            )
+            raise AuthenticationError
+
         access_token, claims = issue_access_token(
             self._auth_secret,
             session_id=session_id,
@@ -258,17 +269,11 @@ class SessionService:
             raise AuthenticationError from exc
 
         session = self._repository.get_session(claims.organization_id, claims.session_id)
-        if (
-            session is None
-            or session.state != _SESSION_STATE_ACTIVE
-            or session.expires_at <= now
-        ):
+        if session is None or session.state != _SESSION_STATE_ACTIVE or session.expires_at <= now:
             raise AuthenticationError
 
-        identity = self._repository.get_identity(
-            claims.organization_id, session.auth_identity_id
-        )
-        if identity is None:
+        identity = self._repository.get_identity(claims.organization_id, session.auth_identity_id)
+        if identity is None or identity.human_actor_id != claims.actor_id:
             raise AuthenticationError
         self._check_identity_usable(identity, now=now)
 
