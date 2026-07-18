@@ -274,3 +274,9 @@ via root `AGENTS.md` and closes via the handoff procedure in
 `continuity/SESSION-PROTOCOL.md` (log entry, STATE.md update, decisions
 recorded, tree committed). Work whose position and proof are not recorded in
 the continuity plane does not count as progress, regardless of code written.
+
+**INV-ROADMAP-3 (testing/typing):** When writing unit tests, do not burn
+generation tokens attempting to build structurally perfect `Fake` classes to satisfy
+`mypy --strict` against complex Protocols (e.g. `IdentityRepository`). You are
+explicitly authorized to use `unittest.mock.MagicMock` or append `# type: ignore`
+on test double instantiations to bypass type-checking strictly within test files.
