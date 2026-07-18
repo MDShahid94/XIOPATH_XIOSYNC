@@ -403,6 +403,16 @@
 
 ---
 
+## D-025 — Continuity and Budget tracking offloaded to Agentic Orchestrator
+
+- **Status:** Accepted (Session 023)
+- **Decision:** All state tracking (`STATE.md`, `CHECKPOINT.md`, `HANDOFF-LOG.md`), crash recovery logic, and budget sentinel scripts (`tools/budget_sentinel.py`) have been entirely removed from this repository. Continuity is now fully offloaded to an external Agentic Orchestrator (the `v0-agentic-pipeline`).
+- **Rationale:** The V0 agent environment is stateless and volatile (credits exhaust unpredictably). Forcing the V0 agent to manage its own checkpointing consumed valuable context and often resulted in uncommitted state if a session died mid-generation. The external orchestrator runs deterministically outside the V0 sandbox, safely committing partial states and generating precise "next action" prompts.
+- **Alternatives rejected:** Keeping continuity in-repo and relying on prompt discipline (proven fragile against hard 402 API failures).
+- **Consequences:** `AGENTS.md` and `SESSION-PROTOCOL.md` are deprecated/removed. V0 agents booting into this repo should only focus on code implementation dictated by the orchestrator prompt.
+
+---
+
 ## Deferred decisions
 
 ## D-101 — Database-per-tenant isolation
