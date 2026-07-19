@@ -8,3 +8,6 @@
 
 ## Session 026
 - **Scope**: Phase 2, Step 1 (Type Registry, Operations, Edges, Memory)
+- **Artifacts**: `domain/operations.py`, `domain/ontology.py`, `services/operations.py`, `services/ontology.py`, `tests/integration/test_operations.py`, `tests/integration/test_ontology.py`
+- **Verification**: `pytest`, `ruff`, and `mypy` passed successfully.
+- **Status**: Merged to main.
