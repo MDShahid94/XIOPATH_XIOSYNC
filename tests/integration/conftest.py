@@ -12,7 +12,7 @@ Postgres in-sandbox, ``postgres:17`` service containers in CI). The fixture:
 The ``CREATE DATABASE`` here is test *infrastructure* (a blank container for
 the real Alembic chain), not schema fabrication: INV-TEST-SCHEMA-1 bans
 fabricated **tables**; the schema itself may only ever come from
-``persistence/migrations/`` (INV-SCHEMA-1).
+``xiosync/persistence/migrations/`` (INV-SCHEMA-1).
 """
 
 from __future__ import annotations
@@ -89,7 +89,7 @@ def scratch_database_url() -> Iterator[str]:
 def migrated_database_url(scratch_database_url: str) -> str:
     """A scratch database migrated to the chain's head via Alembic only.
 
-    The schema comes exclusively from ``persistence/migrations/``
+    The schema comes exclusively from ``xiosync/persistence/migrations/``
     (INV-SCHEMA-1); this fixture issues no DDL of its own.
     """
     with database_url_env(scratch_database_url):

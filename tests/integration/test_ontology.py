@@ -256,18 +256,13 @@ def test_update_memory_supersedes_with_new_version(
 
         with org_scoped_session(engine, context) as session:
             service = MemoryService(MemoryRepository(session))
-            successor_id = service.update_memory(
-                context, original_id, content={"value": 2}
-            )
+            successor_id = service.update_memory(context, original_id, content={"value": 2})
 
         assert successor_id != original_id
 
         with org_scoped_session(engine, context) as session:
             rows = session.execute(
-                text(
-                    "SELECT id, version, superseded_by, content FROM memory "
-                    "WHERE id IN (:a, :b)"
-                ),
+                text("SELECT id, version, superseded_by, content FROM memory WHERE id IN (:a, :b)"),
                 {"a": original_id, "b": successor_id},
             ).all()
         by_id = {row[0]: row for row in rows}

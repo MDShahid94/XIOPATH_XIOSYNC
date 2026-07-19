@@ -72,9 +72,7 @@ def _context(organization_id: uuid.UUID, actor_id: uuid.UUID) -> OrgContext:
     )
 
 
-def _record(
-    engine: Engine, context: OrgContext, *, parent: uuid.UUID | None = None
-) -> uuid.UUID:
+def _record(engine: Engine, context: OrgContext, *, parent: uuid.UUID | None = None) -> uuid.UUID:
     with org_scoped_session(engine, context) as session:
         service = OperationService(OperationRepository(session))
         return service.record_operation(
