@@ -25,9 +25,49 @@ from __future__ import annotations
 import uuid
 from collections.abc import Mapping, Set
 
+#: The four — and only four — graph classes XIOSYNC recognizes (doc 03 §3).
+#: An edge MUST declare one of these; any other value is rejected on write so
+#: the closed set is enforced in the domain, not merely by the DB CHECK.
+GRAPH_CLASS_HIERARCHY = "hierarchy"
+GRAPH_CLASS_WORKFLOW = "workflow"
+GRAPH_CLASS_RELATIONSHIP = "relationship"
+GRAPH_CLASS_DEPENDENCY = "dependency"
+
+#: The closed set of valid ``graph_class`` values (doc 03 §3). This mirrors the
+#: ``ck_edges_graph_class_allowed`` schema CHECK; the domain is the first line
+#: of defense so callers get a clean domain error, not a raw ``IntegrityError``.
+GRAPH_CLASSES: frozenset[str] = frozenset(
+    {
+        GRAPH_CLASS_HIERARCHY,
+        GRAPH_CLASS_WORKFLOW,
+        GRAPH_CLASS_RELATIONSHIP,
+        GRAPH_CLASS_DEPENDENCY,
+    }
+)
+
 #: Graph classes whose edges must form a DAG, validated on write (doc 03 §3).
-#: ``relationship`` is intentionally absent — cycles are legal there.
-ACYCLIC_GRAPH_CLASSES: frozenset[str] = frozenset({"hierarchy", "workflow", "dependency"})
+#: ``relationship`` is intentionally absent — cycles are legal there. Per doc
+#: 03 §3 the acyclic classes are ``hierarchy`` and ``workflow`` (strictly
+#: acyclic) and ``dependency`` (acyclic per its edge-type semantics).
+ACYCLIC_GRAPH_CLASSES: frozenset[str] = frozenset(
+    {
+        GRAPH_CLASS_HIERARCHY,
+        GRAPH_CLASS_WORKFLOW,
+        GRAPH_CLASS_DEPENDENCY,
+    }
+)
+
+
+class UnknownGraphClassError(Exception):
+    """An edge declared a ``graph_class`` outside the closed set (doc 03 §3)."""
+
+    def __init__(self, graph_class: str) -> None:
+        allowed = ", ".join(sorted(GRAPH_CLASSES))
+        super().__init__(
+            f"unknown graph_class {graph_class!r}: an edge must declare one of "
+            f"{{{allowed}}} (doc 03 §3)"
+        )
+        self.graph_class = graph_class
 
 
 class GraphCycleError(Exception):
@@ -41,6 +81,17 @@ class GraphCycleError(Exception):
         self.source_id = source_id
         self.target_id = target_id
         self.graph_class = graph_class
+
+
+def validate_graph_class(graph_class: str) -> None:
+    """Reject a ``graph_class`` outside the four recognized classes (doc 03 §3).
+
+    Enforcing the closed set here means a caller learns a bad value is invalid
+    through a domain error before any persistence work, and the four classes
+    are enforced independently of the backing schema's CHECK constraint.
+    """
+    if graph_class not in GRAPH_CLASSES:
+        raise UnknownGraphClassError(graph_class)
 
 
 def graph_class_is_acyclic(graph_class: str) -> bool:

@@ -25,8 +25,10 @@ from typing import Any
 from xiosync.domain.context import OrgContext
 from xiosync.domain.ontology import (
     GraphCycleError,
+    UnknownGraphClassError,
     graph_class_is_acyclic,
     next_version,
+    validate_graph_class,
     would_create_cycle,
 )
 from xiosync.persistence.ontology import EdgeRepository, MemoryRepository
@@ -38,6 +40,7 @@ __all__ = [
     "MemoryAlreadySupersededError",
     "MemoryNotFoundError",
     "MemoryService",
+    "UnknownGraphClassError",
 ]
 
 
@@ -87,7 +90,16 @@ class EdgeService:
         weight: float | None = None,
         state: str = "active",
     ) -> uuid.UUID:
-        """Create an edge, enforcing same-org endpoints and per-class acyclicity."""
+        """Create an edge, enforcing the graph class, same-org endpoints, and
+        per-class acyclicity.
+
+        The order matters: the ``graph_class`` must be one of the four
+        recognized classes (doc 03 §3) before anything else, then both
+        endpoints must be actors in this organization (INV-EDGE-1), then — for
+        an acyclic class — the edge must not close a cycle (INV-EDGE-2).
+        """
+        validate_graph_class(graph_class)
+
         if not self._repository.actor_exists(context, source_id):
             raise ActorNotInOrganizationError(source_id, "source")
         if not self._repository.actor_exists(context, target_id):
