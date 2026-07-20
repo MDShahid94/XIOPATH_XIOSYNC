@@ -413,6 +413,30 @@
 
 ---
 
+## D-026 — Continuity files restored to repo as portable fallback; XIOV0 is primary orchestrator
+
+- **Status:** Accepted (Session 030, 2026-07-20)
+- **Decision:** The `continuity/` directory (`STATE.md`, `HANDOFF-LOG.md`,
+  `SESSION-PROTOCOL.md`) is restored to git tracking and removed from
+  `.gitignore`. The XIOV0 external orchestrator remains the primary continuity
+  manager (D-025 stands), but these files serve as a **portable fallback**:
+  any agent cloning the repo can bootstrap from `STATE.md` alone without the
+  orchestrator. V0 workspace injection explicitly excludes `continuity/` to
+  prevent agent context conflicts.
+- **Context:** D-025 removed continuity from the repo entirely, but this
+  created a single point of failure — if the orchestrator was unavailable or
+  the project was cloned without XIOV0, no agent could determine the current
+  position. The XIOPATH legacy codebase (3.4MB) is now also included in V0
+  workspace injection as essential rebuild context.
+- **Alternatives rejected:** keeping continuity gitignored and relying
+  entirely on the orchestrator's database (fragile — DB is per-user and not
+  portable); embedding state in commit messages only (not machine-parseable).
+- **Consequences:** `continuity/STATE.md` must stay consistent with the
+  project's actual position. The orchestrator auto-maintains these files
+  after each V0 session completes. Manual edits are acceptable as a fallback.
+
+---
+
 ## Deferred decisions
 
 ## D-101 — Database-per-tenant isolation

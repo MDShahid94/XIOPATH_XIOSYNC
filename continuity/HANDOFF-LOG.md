@@ -10,4 +10,29 @@
 - **Scope**: Phase 2, Step 1 (Type Registry, Operations, Edges, Memory)
 - **Artifacts**: `domain/operations.py`, `domain/ontology.py`, `services/operations.py`, `services/ontology.py`, `tests/integration/test_operations.py`, `tests/integration/test_ontology.py`
 - **Verification**: `pytest`, `ruff`, and `mypy` passed successfully.
-- **Status**: Merged to main.
+- **Status**: Merged to main. Commit `b945848`, `9e5a5c3`.
+
+## Session 027
+- **Scope**: Phase 2, Step 2 (Lifecycle State Machines & Events — INV-LC-1/2)
+- **Artifacts**: `domain/events.py`, `domain/lifecycle.py`, `services/events.py`, `services/lifecycle.py`, `tests/integration/test_events.py`, `tests/integration/test_lifecycle.py`
+- **Verification**: V0-generated, merged to main.
+- **Status**: Merged to main. Commit `1084932`.
+
+## Session 028
+- **Scope**: Phase 2, Step 3 (Graph Classes and Acyclicity Validation — H5)
+- **Artifacts**: Graph classes domain models, acyclicity invariants, `tests/integration/test_ontology_graph.py`
+- **Verification**: V0-generated, merged to main.
+- **Status**: Merged to main. Commit `9e8124e`.
+
+## Session 029
+- **Scope**: Phase 2, Step 4 (Append-only Events privilege boundary & Versioned Memory — H6)
+- **Artifacts**: Migration `0006_events_memory_triggers.py`, `tests/integration/test_events_immutability.py`, `tests/integration/test_memory_versioning.py`
+- **Verification**: V0-generated, merged to main.
+- **Status**: Merged to main. Commit `8da139e`.
+
+## Session 030
+- **Scope**: Continuity restoration & orchestrator migration
+- **Artifacts**: Restored `continuity/` to git tracking; removed from `.gitignore`.
+- **Orchestrator**: Migrated to XIOV0 external agentic pipeline.
+- **Note**: `continuity/` is tracked in git but excluded from V0 workspace injection to avoid agent context conflicts. D-025 remains accepted — the XIOV0 orchestrator manages session state externally. The `continuity/` files serve as a portable fallback and human-readable project position marker.
+- **Status**: Merged to main. Commit `a478361`.
