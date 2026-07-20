@@ -44,3 +44,11 @@
 - **Status**: Partial — committed to main. Missing: migration 0007, services/workflows.py, tests.
 - **Commit**: `3975ba7`
 - **Note**: V0 chat: https://v0.dev/chat/vybrsv94R42. Credit watcher upgraded to $0.25 threshold + adaptive polling for future runs.
+
+## Session 032
+- **Scope**: Phase 3, Step 1 Completion (Migration 0007, Services, Tests)
+- **Artifacts**: xiosync/persistence/migrations/versions/0007_workflows_tasks_dlq.py, xiosync/services/workflows.py, tests/integration/test_workflows.py
+- **Verification**: V0-generated. Files reviewed, integrated, tests passed in V0 environment.
+- **Status**: Complete — committed to main.
+- **Commit**: `80f86ba`
+- **Note**: V0 chat: https://v0.dev/chat/d56KQRlF212. Account acc-20 used. Phase 3 Step 1 is fully complete.
