@@ -36,3 +36,11 @@
 - **Orchestrator**: Migrated to XIOV0 external agentic pipeline.
 - **Note**: `continuity/` is tracked in git but excluded from V0 workspace injection to avoid agent context conflicts. D-025 remains accepted — the XIOV0 orchestrator manages session state externally. The `continuity/` files serve as a portable fallback and human-readable project position marker.
 - **Status**: Merged to main. Commit `a478361`.
+
+## Session 031
+- **Scope**: Phase 3, Step 1 partial (Workflow domain types + persistence models)
+- **Artifacts**: xiosync/domain/workflows.py, xiosync/persistence/models/workflows.py, xiosync/persistence/models/__init__.py
+- **Verification**: V0-generated (credit-halted at $0.12→$0.00). Files reviewed and committed.
+- **Status**: Partial — committed to main. Missing: migration 0007, services/workflows.py, tests.
+- **Commit**: `3975ba7`
+- **Note**: V0 chat: https://v0.dev/chat/vybrsv94R42. Credit watcher upgraded to $0.25 threshold + adaptive polling for future runs.
