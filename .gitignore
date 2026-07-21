@@ -15,3 +15,14 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+
+# V0 Sandbox Pollution Guards (Clean Root L2)
+/app/
+/components/
+/lib/
+/package.json
+/pnpm-lock.yaml
+/components.json
+/next.config.*
+/postcss.config.*
+/tailwind.config.*
