@@ -26,7 +26,7 @@ before any handler runs, so every endpoint here is implicitly tenant-scoped.
 from __future__ import annotations
 
 import uuid
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any, cast
 
 from fastapi import APIRouter, Request
@@ -35,6 +35,10 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session as OrmSession
 
 from xiosync.domain.context import OrgContext
+from xiosync.platform.task_credentials import (
+    load_task_credential_signing_key,
+    mint_task_credential,
+)
 from xiosync.services.workflows import (
     InactiveLeaseError,
     NonCompletableError,
@@ -112,6 +116,21 @@ class LeaseResponse(StrictModel):
     lease_expires_at: str  # ISO-8601 UTC
     attempts: int
     state: str
+    # INV-TASK-SEC-1/2: a scoped, single-use credential minted at lease time,
+    # bound to (task_id, worker_id) and expiring with the lease. The worker
+    # presents this — never the raw stored secret — to a capability that needs
+    # credentials.
+    task_credential: str = Field(
+        description=(
+            "Signed, single-use task credential bound to this (task_id, "
+            "worker_id) lease and expiring with it (INV-TASK-SEC-1/2). Signed "
+            "with a key distinct from the user-session JWT secret."
+        )
+    )
+    task_credential_expires_at: str  # ISO-8601 UTC; equals the lease expiry
+    scoped_capabilities: list[uuid.UUID] = Field(
+        description="The capability IDs this task credential is scoped to."
+    )
 
 
 class HeartbeatRequest(StrictModel):
@@ -206,6 +225,23 @@ def lease_task(
     assert task.lease_id is not None  # noqa: S101 — guaranteed by lease_task on success
     assert task.leased_by is not None  # noqa: S101
     assert task.lease_expires_at is not None  # noqa: S101
+
+    # INV-TASK-SEC-1/2: mint the scoped, single-use credential at lease time,
+    # bound to (task_id, worker_id) and expiring with the lease. Signing uses
+    # the worker-credential key (distinct from the user JWT secret — H7); a
+    # missing key fails loudly rather than downgrading security (INV-SEC-1).
+    scoped_capabilities = [task.capability_id]
+    token, credential = mint_task_credential(
+        load_task_credential_signing_key(),
+        task_id=task.id,
+        worker_id=task.leased_by,
+        lease_id=task.lease_id,
+        organization_id=context.organization_id,
+        scoped_capabilities=scoped_capabilities,
+        now=datetime.now(UTC),
+        expires_at=task.lease_expires_at,
+    )
+
     return LeaseResponse(
         task_id=task.id,
         lease_id=task.lease_id,
@@ -213,6 +249,9 @@ def lease_task(
         lease_expires_at=task.lease_expires_at.isoformat(),
         attempts=task.attempts,
         state=task.state,
+        task_credential=token,
+        task_credential_expires_at=credential.expires_at.isoformat(),
+        scoped_capabilities=list(credential.scoped_capabilities),
     )
 
 

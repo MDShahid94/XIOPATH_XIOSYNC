@@ -30,6 +30,10 @@ from xiosync.api.routers.dlq import router as dlq_router
 from xiosync.api.routers.execution import router as execution_router
 from xiosync.domain.context import MembershipRole, OrgContext, PlatformRole
 from xiosync.platform.ids import new_id
+from xiosync.platform.task_credentials import (
+    TaskCredentialError,
+    verify_task_credential,
+)
 from xiosync.services.workflows import (
     CompletionOutcome,
     DeadLetterNotFoundError,
@@ -55,7 +59,12 @@ _RUN_ID = new_id()
 _DL_ID = new_id()
 _PROPOSAL_ID = new_id()
 
-_NOW = datetime(2026, 7, 22, 12, 0, 0, tzinfo=UTC)
+# The lease endpoint mints a task credential with the real wall clock as ``iat``
+# and the lease expiry as ``exp``; the credential TTL is capped at one hour. So
+# the mocked lease expiry must be a near-future, wall-clock-relative instant.
+# Microseconds are stripped so the JWT's integer-second ``exp`` round-trips
+# exactly through verify (INV-TASK-SEC-2 lifetime check).
+_NOW = datetime.now(UTC).replace(microsecond=0)
 _EXPIRES = _NOW + timedelta(minutes=5)
 
 _CONTEXT = OrgContext(
@@ -133,6 +142,9 @@ def _make_app(mock_service: MagicMock) -> FastAPI:
     return app
 
 
+_TASK_CREDENTIAL_KEY = "unit-test-worker-credential-key-0123456789abcdef"
+
+
 @pytest.fixture()
 def execution_client(monkeypatch: pytest.MonkeyPatch) -> tuple[TestClient, MagicMock]:
     """TestClient with a MagicMock WorkflowService wired into both routers."""
@@ -143,6 +155,9 @@ def execution_client(monkeypatch: pytest.MonkeyPatch) -> tuple[TestClient, Magic
     monkeypatch.setattr(
         "xiosync.api.routers.dlq.WorkflowService", lambda _session: mock_service
     )
+    # INV-TASK-SEC-1/2: the lease endpoint mints a task credential and needs the
+    # worker-credential signing key (distinct from the user JWT secret — H7).
+    monkeypatch.setenv("WORKER_CREDENTIAL_KEY", _TASK_CREDENTIAL_KEY)
     app = _make_app(mock_service)
     return TestClient(app, raise_server_exceptions=True), mock_service
 
@@ -169,6 +184,61 @@ def test_lease_task_success(execution_client: tuple[TestClient, MagicMock]) -> N
     assert body["leased_by"] == str(_WORKER_ID)
     assert body["state"] == "leased"
     assert body["attempts"] == 1
+
+    # INV-TASK-SEC-1/2: a scoped, single-use task credential is minted at lease
+    # time, bound to (task_id, worker_id) and expiring with the lease.
+    assert body["task_credential"]
+    assert body["task_credential_expires_at"] == _EXPIRES.isoformat()
+    assert body["scoped_capabilities"] == [str(_CAPABILITY_ID)]
+
+    claims = verify_task_credential(
+        _TASK_CREDENTIAL_KEY,
+        body["task_credential"],
+        now=_NOW,
+        expected_task_id=_TASK_ID,
+        expected_worker_id=_WORKER_ID,
+    )
+    assert claims.task_id == _TASK_ID
+    assert claims.worker_id == _WORKER_ID
+    assert claims.lease_id == _LEASE_ID
+    assert claims.organization_id == _ORG_ID
+    assert claims.scoped_capabilities == (_CAPABILITY_ID,)
+    assert claims.expires_at == _EXPIRES
+
+
+def test_lease_credential_cannot_be_replayed_on_another_task(
+    execution_client: tuple[TestClient, MagicMock],
+) -> None:
+    """INV-TASK-SEC-2: the minted credential is bound to (task_id, worker_id).
+
+    Presenting it for a different task (or worker) is rejected — a leaked
+    credential cannot be replayed elsewhere.
+    """
+    http, svc = execution_client
+    svc.lease_task.return_value = _LEASED_TASK
+
+    resp = http.post(
+        f"/api/v1/execution/tasks/{_TASK_ID}/lease",
+        json={"leased_by": str(_WORKER_ID)},
+    )
+    token = resp.json()["task_credential"]
+
+    with pytest.raises(TaskCredentialError):
+        verify_task_credential(
+            _TASK_CREDENTIAL_KEY,
+            token,
+            now=_NOW,
+            expected_task_id=new_id(),  # a different task
+            expected_worker_id=_WORKER_ID,
+        )
+    with pytest.raises(TaskCredentialError):
+        verify_task_credential(
+            _TASK_CREDENTIAL_KEY,
+            token,
+            now=_NOW,
+            expected_task_id=_TASK_ID,
+            expected_worker_id=new_id(),  # a different worker
+        )
 
 
 def test_lease_task_not_found_returns_404(execution_client: tuple[TestClient, MagicMock]) -> None:
