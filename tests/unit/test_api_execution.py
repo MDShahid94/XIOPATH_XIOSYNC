@@ -19,7 +19,6 @@ ASGI scope's state dict via a thin pass-through middleware.
 from __future__ import annotations
 
 import uuid
-from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from unittest.mock import MagicMock, patch
@@ -27,7 +26,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
-
 from xiosync.api.routers.dlq import router as dlq_router
 from xiosync.api.routers.execution import router as execution_router
 from xiosync.domain.context import MembershipRole, OrgContext, PlatformRole

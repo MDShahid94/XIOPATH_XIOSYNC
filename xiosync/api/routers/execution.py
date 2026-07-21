@@ -27,7 +27,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import timedelta
-from typing import Annotated, Any, cast
+from typing import Any, cast
 
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse

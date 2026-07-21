@@ -142,7 +142,7 @@ class ResolveRequest(StrictModel):
     )
 
     @model_validator(mode="after")
-    def _require_explicit(self) -> "ResolveRequest":
+    def _require_explicit(self) -> ResolveRequest:
         if not self.explicit_approval:
             raise ValueError(
                 "explicit_approval must be true; auto-resolution is forbidden (INV-DLQ-3)"
