@@ -1,10 +1,17 @@
 # Current Position
 - **Phase**: Phase 4 — Workers & the execution plane
-- **Step**: Step 1 IN PROGRESS — domain predicates, ORM models, migration 0008, service stubs.
-- **Next Action**: Phase 4 Step 2 — Implement WorkerService methods: register, approve,
-  issue_credential, revoke. Integration tests (INV-WORKER-CRED-1/2, INV-TRUST-1/2).
-- **Last updated**: Session 034 (2026-07-21)
+- **Step**: Step 2 COMPLETE — WorkerService methods implemented, credential integration tests passing.
+- **Next Action**: Phase 4 Step 3 — Task lease protocol, execution-plane API endpoints, DLQ governance stubs (INV-EXEC-1/2/3, INV-DLQ-1/2/3/4).
+- **Last updated**: Session 035 (2026-07-21)
 - **Orchestrator**: XIOV0 (v0-agentic-pipeline)
+
+## Phase 4 Step 2 Progress
+| Component | Status |
+|-----------|--------|
+| services/workers.py — all methods implemented | done |
+| tests/integration/test_workers_integration.py — INV-WORKER-CRED-1/2, INV-TRUST-1/2 | done |
+| ruff / mypy clean | done |
+| 125 unit tests passing | done |
 
 ## Phase 4 Step 1 Progress
 | Component | Status |
