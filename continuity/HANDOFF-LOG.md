@@ -52,3 +52,11 @@
 - **Status**: Complete — committed to main.
 - **Commit**: `80f86ba`
 - **Note**: V0 chat: https://v0.dev/chat/d56KQRlF212. Account acc-20 used. Phase 3 Step 1 is fully complete.
+
+## Session 035
+- **Scope**: Phase 4, Step 2 (WorkerService methods and credential integration tests)
+- **Artifacts**: `xiosync/services/workers.py`, `tests/integration/test_workers_integration.py`
+- **Verification**: V0-generated. Files reviewed, integrated, tests passed in V0 environment and locally. Ruff, mypy clean. 133 unit tests passed (including the new integration tests).
+- **Status**: Complete — committed to main.
+- **Commit**: `b671651`
+- **Note**: V0 chat: https://v0.dev/chat/p8evDSrv8Ku. Account acc-23 used. Phase 4 Step 2 is fully complete. Incident captured for sandbox pollution.
