@@ -27,8 +27,9 @@ state. ``organization_id`` always comes from the context, never the caller.
 from __future__ import annotations
 
 import uuid
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from sqlalchemy import select
@@ -37,13 +38,23 @@ from sqlalchemy.orm import Session
 from xiosync.domain.context import OrgContext
 from xiosync.domain.workflows import (
     DEAD_LETTER_LANDING_STATE,
+    DEAD_LETTER_STATE_INVESTIGATING,
+    DEAD_LETTER_STATE_RESOLVED,
+    TASK_STATE_COMPLETED,
     TASK_STATE_DEAD_LETTER,
+    TASK_STATE_LEASED,
     TASK_STATE_QUEUED,
     WORKFLOW_RUN_STATE_QUEUED,
     WORKFLOW_STATE_DRAFT,
     WORKFLOW_STATE_PUBLISHED,
     WorkflowCycleError,
     WorkflowSpecError,
+    dead_letter_accepts_proposal,
+    dead_letter_is_approvable,
+    lease_has_expired,
+    task_is_completable,
+    task_is_completed,
+    task_is_leaseable,
     validate_workflow_dag,
 )
 from xiosync.persistence.models.workflows import (
@@ -55,9 +66,14 @@ from xiosync.persistence.models.workflows import (
 from xiosync.platform.ids import new_id
 
 __all__ = [
+    "CompletionOutcome",
+    "DeadLetterNotFoundError",
     "DeadLetterRecord",
+    "InactiveLeaseError",
+    "NonCompletableError",
     "TaskNotFoundError",
     "TaskRecord",
+    "UnleaseableError",
     "WorkflowCycleError",
     "WorkflowNotFoundError",
     "WorkflowRecord",
@@ -81,6 +97,41 @@ class TaskNotFoundError(Exception):
     def __init__(self, task_id: uuid.UUID) -> None:
         super().__init__(f"task {task_id} not found in organization")
         self.task_id = task_id
+
+
+class UnleaseableError(Exception):
+    """A task cannot be leased because it is not in the ``queued`` state."""
+
+    def __init__(self, task_id: uuid.UUID, state: str) -> None:
+        super().__init__(f"task {task_id} is not leaseable (state={state!r})")
+        self.task_id = task_id
+        self.state = state
+
+
+class InactiveLeaseError(Exception):
+    """The lease is expired or the caller's lease_id does not match."""
+
+    def __init__(self, task_id: uuid.UUID, reason: str = "lease inactive") -> None:
+        super().__init__(f"task {task_id}: {reason}")
+        self.task_id = task_id
+
+
+class NonCompletableError(Exception):
+    """A task cannot be completed because it is not in the ``leased`` state."""
+
+    def __init__(self, task_id: uuid.UUID, state: str) -> None:
+        super().__init__(f"task {task_id} cannot be completed (state={state!r})")
+        self.task_id = task_id
+        self.state = state
+
+
+class DeadLetterNotFoundError(Exception):
+    """The referenced dead-letter record does not exist in this organization."""
+
+    def __init__(self, dead_letter_id: uuid.UUID) -> None:
+        super().__init__(f"dead_letter {dead_letter_id} not found in organization")
+        self.dead_letter_id = dead_letter_id
+
 
 
 @dataclass(frozen=True, slots=True)
@@ -118,6 +169,10 @@ class TaskRecord:
     capability_id: uuid.UUID
     state: str
     attempts: int
+    # Lease fields (None when the task has not been leased yet)
+    lease_id: uuid.UUID | None
+    leased_by: uuid.UUID | None   # FK → actors.id (the worker actor)
+    lease_expires_at: datetime | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -129,6 +184,23 @@ class DeadLetterRecord:
     task_id: uuid.UUID
     state: str
     failure_reason: str | None
+    proposal_id: uuid.UUID | None
+    diagnosis: dict[str, Any] | None
+
+
+@dataclass(frozen=True, slots=True)
+class CompletionOutcome:
+    """Result of ``complete_task`` — carries an idempotency flag.
+
+    ``duplicate=True`` means the task was already ``completed`` before this
+    call; the caller should treat the outcome as a no-op rather than an error
+    (INV-EXEC-2).
+    """
+
+    task_id: uuid.UUID
+    state: str
+    result: dict[str, Any] | None
+    duplicate: bool
 
 
 def _workflow_record(row: Workflow) -> WorkflowRecord:
@@ -162,6 +234,9 @@ def _task_record(row: Task) -> TaskRecord:
         capability_id=row.capability_id,
         state=row.state,
         attempts=row.attempts,
+        lease_id=row.lease_id,
+        leased_by=row.leased_by,
+        lease_expires_at=row.lease_expires_at,
     )
 
 
@@ -172,6 +247,8 @@ def _dead_letter_record(row: DeadLetter) -> DeadLetterRecord:
         task_id=row.task_id,
         state=row.state,
         failure_reason=row.failure_reason,
+        proposal_id=getattr(row, "proposal_id", None),
+        diagnosis=getattr(row, "diagnosis", None),
     )
 
 
@@ -380,3 +457,255 @@ class WorkflowService:
             )
         )
         return None if row is None else _dead_letter_record(row)
+
+    def propose_dlq_correction(
+        self,
+        context: OrgContext,
+        dead_letter_id: uuid.UUID,
+        *,
+        diagnosis: Mapping[str, Any],
+    ) -> uuid.UUID:
+        """Attach a correction proposal to a dead-letter record (INV-DLQ-2).
+
+        The governed correction flow: a proposal_id is generated and stored
+        alongside the diagnosis on the dead-letter record, and the state
+        advances from ``open`` to ``investigating``. No spec mutation or
+        auto-resolution takes place here — governance requires a separate
+        explicit ``resolve_dead_letter`` call with ``explicit_approval=True``
+        (INV-DLQ-3).
+
+        Raises :class:`DeadLetterNotFoundError` if the record is absent, or
+        :class:`ValueError` if the record is not in the ``open`` state (it
+        already has a proposal or is resolved).
+        """
+        row = self._session.scalar(
+            select(DeadLetter)
+            .where(
+                DeadLetter.organization_id == context.organization_id,
+                DeadLetter.id == dead_letter_id,
+            )
+            .with_for_update()
+        )
+        if row is None:
+            raise DeadLetterNotFoundError(dead_letter_id)
+        if not dead_letter_accepts_proposal(row.state):
+            raise ValueError(
+                f"dead_letter {dead_letter_id} is in state {row.state!r} "
+                "and does not accept a new correction proposal"
+            )
+
+        proposal_id = new_id()
+        row.proposal_id = proposal_id
+        row.diagnosis = dict(diagnosis)
+        row.state = DEAD_LETTER_STATE_INVESTIGATING
+        self._session.flush()
+        return proposal_id
+
+    def resolve_dead_letter(
+        self,
+        context: OrgContext,
+        dead_letter_id: uuid.UUID,
+        *,
+        explicit_approval: bool = False,
+    ) -> None:
+        """Resolve a dead-letter record, gated by explicit human/policy approval.
+
+        INV-DLQ-3: ``explicit_approval`` must be ``True`` — auto-resolution is
+        never permitted. The record must be in ``investigating`` state (a
+        proposal must have been submitted first). The spec correction/promotion
+        is a separate act (INV-DLQ-4); this method only closes the DLQ record.
+
+        Raises :class:`DeadLetterNotFoundError` if absent, or
+        :class:`ValueError` if the record is not approvable (wrong state or
+        ``explicit_approval=False``).
+        """
+        row = self._session.scalar(
+            select(DeadLetter)
+            .where(
+                DeadLetter.organization_id == context.organization_id,
+                DeadLetter.id == dead_letter_id,
+            )
+            .with_for_update()
+        )
+        if row is None:
+            raise DeadLetterNotFoundError(dead_letter_id)
+        if not dead_letter_is_approvable(row.state, explicit_approval):
+            raise ValueError(
+                f"dead_letter {dead_letter_id} cannot be resolved: "
+                f"state={row.state!r}, explicit_approval={explicit_approval}"
+            )
+
+        row.state = DEAD_LETTER_STATE_RESOLVED
+        self._session.flush()
+
+    # -- Lease protocol (INV-EXEC-1/2, doc 07 §1.1) ---------------------------
+
+    _DEFAULT_LEASE_DURATION: timedelta = timedelta(minutes=5)
+
+    def _locked_task(
+        self,
+        context: OrgContext,
+        task_id: uuid.UUID,
+    ) -> Task:
+        """Fetch a task row with a row-level lock, raising if absent."""
+        row = self._session.scalar(
+            select(Task)
+            .where(
+                Task.organization_id == context.organization_id,
+                Task.id == task_id,
+            )
+            .with_for_update()
+        )
+        if row is None:
+            raise TaskNotFoundError(task_id)
+        return row
+
+    def lease_task(
+        self,
+        context: OrgContext,
+        task_id: uuid.UUID,
+        *,
+        leased_by: uuid.UUID,    # worker actor ID (FK → actors.id)
+        duration: timedelta | None = None,
+        now: datetime | None = None,
+    ) -> TaskRecord:
+        """Atomically acquire a lease on a ``queued`` task (INV-EXEC-1).
+
+        A row-level lock prevents double-leasing under concurrent workers.
+        The task must be in the ``queued`` state; any other state raises
+        :class:`UnleaseableError`. On success the task transitions to
+        ``leased``, the attempt counter increments, and a new lease_id,
+        leased_by, and lease_expires_at are recorded.
+        """
+        effective_now = now if now is not None else datetime.now(UTC)
+        effective_duration = duration if duration is not None else self._DEFAULT_LEASE_DURATION
+
+        row = self._locked_task(context, task_id)
+        if not task_is_leaseable(row.state):
+            raise UnleaseableError(task_id, row.state)
+
+        row.lease_id = new_id()
+        row.leased_by = leased_by
+        row.lease_expires_at = effective_now + effective_duration
+        row.state = TASK_STATE_LEASED
+        row.attempts = (row.attempts or 0) + 1
+        self._session.flush()
+        return _task_record(row)
+
+    def heartbeat_task(
+        self,
+        context: OrgContext,
+        task_id: uuid.UUID,
+        *,
+        lease_id: uuid.UUID,
+        duration: timedelta | None = None,
+        now: datetime | None = None,
+    ) -> TaskRecord:
+        """Extend an active lease by *duration* to prevent expiry mid-work.
+
+        The caller must present the same ``lease_id`` that was returned by
+        :meth:`lease_task`. An expired or mismatched lease raises
+        :class:`InactiveLeaseError`.
+        """
+        effective_now = now if now is not None else datetime.now(UTC)
+        effective_duration = duration if duration is not None else self._DEFAULT_LEASE_DURATION
+
+        row = self._locked_task(context, task_id)
+        if row.lease_id != lease_id:
+            raise InactiveLeaseError(task_id, "lease_id mismatch")
+        if lease_has_expired(row.state, row.lease_expires_at, effective_now):
+            raise InactiveLeaseError(task_id, "lease has expired")
+
+        row.lease_expires_at = effective_now + effective_duration
+        self._session.flush()
+        return _task_record(row)
+
+    def complete_task(
+        self,
+        context: OrgContext,
+        task_id: uuid.UUID,
+        *,
+        lease_id: uuid.UUID,
+        result: Mapping[str, Any] | None = None,
+        now: datetime | None = None,
+    ) -> CompletionOutcome:
+        """Mark a leased task as ``completed`` — idempotent on duplicate calls.
+
+        INV-EXEC-2: a task may only be completed once. If the task is already
+        in the ``completed`` state the method returns a :class:`CompletionOutcome`
+        with ``duplicate=True`` instead of raising; all other concurrent
+        completion attempts are protected by the row-level lock acquired inside
+        :meth:`_locked_task`.
+
+        Raises :class:`TaskNotFoundError`, :class:`InactiveLeaseError` (wrong
+        lease_id or expired lease), or :class:`NonCompletableError` (task is in
+        a non-completable non-completed state).
+        """
+        effective_now = now if now is not None else datetime.now(UTC)
+        row = self._locked_task(context, task_id)
+
+        # Idempotency: already completed → return duplicate signal, no mutation.
+        if task_is_completed(row.state):
+            return CompletionOutcome(
+                task_id=task_id,
+                state=row.state,
+                result=getattr(row, "result", None),
+                duplicate=True,
+            )
+
+        if not task_is_completable(row.state):
+            raise NonCompletableError(task_id, row.state)
+        if row.lease_id != lease_id:
+            raise InactiveLeaseError(task_id, "lease_id mismatch on completion")
+        if lease_has_expired(row.state, row.lease_expires_at, effective_now):
+            raise InactiveLeaseError(task_id, "lease expired before completion")
+
+        row.state = TASK_STATE_COMPLETED
+        row.lease_expires_at = None
+        if result is not None and hasattr(row, "result"):
+            row.result = dict(result)
+        self._session.flush()
+        return CompletionOutcome(
+            task_id=task_id,
+            state=TASK_STATE_COMPLETED,
+            result=dict(result) if result is not None else None,
+            duplicate=False,
+        )
+
+    def expire_leases(
+        self,
+        context: OrgContext,
+        *,
+        now: datetime | None = None,
+    ) -> Sequence[uuid.UUID]:
+        """Reclaim all tasks whose leases have expired, returning their ids.
+
+        Expired ``leased`` tasks are returned to the ``queued`` state so they
+        can be re-leased by a fresh worker. The lease fields are cleared. This
+        method is intended for a periodic reconciler (doc 07 §1.1) and is safe
+        to call concurrently — each row is updated atomically within the
+        caller's transaction.
+        """
+        effective_now = now if now is not None else datetime.now(UTC)
+
+        rows = list(
+            self._session.scalars(
+                select(Task).where(
+                    Task.organization_id == context.organization_id,
+                    Task.state == TASK_STATE_LEASED,
+                )
+            )
+        )
+
+        reclaimed: list[uuid.UUID] = []
+        for row in rows:
+            if lease_has_expired(row.state, row.lease_expires_at, effective_now):
+                row.state = TASK_STATE_QUEUED
+                row.lease_id = None
+                row.leased_by = None
+                row.lease_expires_at = None
+                reclaimed.append(row.id)
+
+        if reclaimed:
+            self._session.flush()
+        return reclaimed

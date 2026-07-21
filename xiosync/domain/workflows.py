@@ -38,6 +38,7 @@ referencing declared node ids. Only structure and acyclicity are enforced here.
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
+from datetime import datetime
 from typing import Any
 
 # --- Closed state sets (docs 03 §§2.11, 4.4; 07 §1.1) ----------------------
@@ -202,7 +203,7 @@ def _find_cycle(adjacency: Mapping[str, set[str]]) -> list[str] | None:
     for a legible error. The colour map also guarantees termination on any
     input, so a pathological spec cannot loop the validator forever.
     """
-    WHITE, GREY, BLACK = 0, 1, 2
+    WHITE, GREY, BLACK = 0, 1, 2  # noqa: N806 — graph-theory colour convention
     colour: dict[str, int] = {node: WHITE for node in adjacency}
 
     def visit(node: str, path: list[str]) -> list[str] | None:
@@ -246,3 +247,91 @@ def validate_workflow_dag(spec: Mapping[str, Any]) -> None:
     cycle = _find_cycle(adjacency)
     if cycle is not None:
         raise WorkflowCycleError(cycle)
+
+
+# --- Lease lifecycle predicates (INV-EXEC-1/2, doc 07 §1.1) -----------------
+
+#: Only ``queued`` tasks may be leased (expired tasks return to queued before
+#: re-leasing, so leasing is always from the queued state).
+TASK_LEASEABLE_STATES: frozenset[str] = frozenset({TASK_STATE_QUEUED})
+
+#: Tasks in these states may be completed by the worker that holds the lease.
+TASK_COMPLETABLE_STATES: frozenset[str] = frozenset({TASK_STATE_LEASED})
+
+
+def task_is_leaseable(state: str) -> bool:
+    """Return ``True`` iff a task in *state* may have a lease acquired on it.
+
+    Only ``queued`` tasks are leaseable (INV-EXEC-1). Expired tasks cycle back
+    to ``queued`` before they can be re-leased, so this single-state predicate
+    covers the whole lease-acquisition pre-condition.
+    """
+    return state in TASK_LEASEABLE_STATES
+
+
+def task_is_completed(state: str) -> bool:
+    """Return ``True`` iff a task is already in its terminal ``completed`` state."""
+    return state == TASK_STATE_COMPLETED
+
+
+def task_is_completable(state: str) -> bool:
+    """Return ``True`` iff a worker may complete a task in *state*.
+
+    Only a ``leased`` task may be completed (INV-EXEC-2); a task that is
+    already ``completed`` cannot be completed again — the idempotency check in
+    the service layer handles duplicates before state is inspected here.
+    """
+    return state in TASK_COMPLETABLE_STATES
+
+
+def lease_is_active(
+    lease_expires_at: datetime | None,
+    now: datetime,
+) -> bool:
+    """Return ``True`` iff the lease has not yet expired at *now*.
+
+    ``lease_expires_at`` is ``None`` for tasks that have never been leased;
+    those are not ``leased`` in state either, so callers should not reach this
+    predicate for un-leased tasks.
+    """
+    return lease_expires_at is not None and lease_expires_at > now
+
+
+def lease_has_expired(
+    state: str,
+    lease_expires_at: datetime | None,
+    now: datetime,
+) -> bool:
+    """Return ``True`` iff a leased task's lease has passed its expiry wall-clock.
+
+    A task that is not in ``leased`` state (e.g., already completed or queued)
+    cannot be *expired* regardless of the timestamp — only leased rows are
+    candidates for the expiry reconciler.
+    """
+    return state == TASK_STATE_LEASED and not lease_is_active(lease_expires_at, now)
+
+
+# --- DLQ governance predicates (INV-DLQ-2/3/4, doc 07 §4) ------------------
+
+
+def dead_letter_accepts_proposal(state: str) -> bool:
+    """Return ``True`` iff a dead-letter record may receive a correction proposal.
+
+    INV-DLQ-2: the governed correction flow begins with attaching a diagnosis
+    and proposal to an ``open`` dead-letter record, moving it to
+    ``investigating``. A record already ``investigating`` or ``resolved`` cannot
+    accept a new proposal without an explicit re-open (not modelled here).
+    """
+    return state == DEAD_LETTER_STATE_OPEN
+
+
+def dead_letter_is_approvable(state: str, explicit_approval: bool) -> bool:
+    """Return ``True`` iff a dead-letter record may be resolved.
+
+    INV-DLQ-3: resolution requires *both* the record to be in the
+    ``investigating`` state *and* an explicit approval signal from the caller.
+    Auto-resolution (``explicit_approval=False``) is always rejected — the
+    engine produces a diagnosis and proposed spec but never resolves the DLQ
+    entry itself.
+    """
+    return state == DEAD_LETTER_STATE_INVESTIGATING and explicit_approval

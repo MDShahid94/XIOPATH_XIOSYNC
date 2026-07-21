@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import uuid
 
+import xiosync.persistence.models.workflows  # noqa: F401 — registers Phase 3 tables
 from sqlalchemy import Table, UniqueConstraint
 from sqlalchemy.dialects import postgresql
 from xiosync.persistence.models import Base
@@ -34,6 +35,11 @@ EXPECTED_TABLES = {
     "operations",
     "edges",
     "memory",
+    # Phase 3 — durable execution spine (doc 07)
+    "workflows",
+    "workflow_runs",
+    "tasks",
+    "dead_letters",
 }
 
 # organizations IS the tenant root; it carries no organization_id (doc 06 §5).
