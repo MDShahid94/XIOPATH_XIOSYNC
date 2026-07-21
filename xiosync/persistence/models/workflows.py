@@ -229,8 +229,7 @@ class DeadLetter(Base):
     )  # IMM
     task_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     failure_reason: Mapped[str | None] = mapped_column(Text)
-    # self-learning output (advisory); trusted only after human validation (INV-DLQ-2/3)
-    diagnosis: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    diagnosis: Mapped[dict[str, Any] | None] = mapped_column(JSONB)  # self-learning output (advisory)
     # Soft pointer to a future proposal record (INV-DLQ-2/3). Deliberately NOT a
     # FK: the proposals table arrives with the governed-correction phase.
     proposal_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))

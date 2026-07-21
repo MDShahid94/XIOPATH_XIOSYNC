@@ -15,14 +15,3 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
-
-# V0 sandbox Next.js scaffold files — must never be committed to this Python backend
-public/
-tsconfig.json
-next.config.*
-next-env.d.ts
-components/
-styles/
-.next/
-postcss.config.*
-tailwind.config.*

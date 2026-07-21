@@ -23,6 +23,7 @@ from xiosync.persistence.models.ontology import (
     TypeRegistryAlias,
 )
 from xiosync.persistence.models.operations import Operation
+from xiosync.persistence.models.workers import WorkerCredential, WorkerEnrollment
 from xiosync.persistence.models.workflows import (
     DeadLetter,
     Task,
@@ -49,4 +50,6 @@ __all__ = [
     "TypeRegistryAlias",
     "Workflow",
     "WorkflowRun",
+    "WorkerCredential",
+    "WorkerEnrollment",
 ]

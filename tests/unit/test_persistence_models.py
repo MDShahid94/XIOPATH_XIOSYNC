@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import uuid
 
+import xiosync.persistence.models.workers  # noqa: F401 — registers Phase 4 tables
 import xiosync.persistence.models.workflows  # noqa: F401 — registers Phase 3 tables
 from sqlalchemy import Table, UniqueConstraint
 from sqlalchemy.dialects import postgresql
@@ -40,6 +41,9 @@ EXPECTED_TABLES = {
     "workflow_runs",
     "tasks",
     "dead_letters",
+    # Phase 4 — worker enrollment & credentials (doc 07 §2)
+    "worker_enrollments",
+    "worker_credentials",
 }
 
 # organizations IS the tenant root; it carries no organization_id (doc 06 §5).
@@ -84,8 +88,14 @@ def test_tenant_tables_have_immutable_org_fk_not_null_and_indexed() -> None:
 
 
 def test_every_table_has_server_defaulted_created_at() -> None:
+    # worker_credentials uses `issued_at` (IMM, server-defaulted) instead of
+    # `created_at` by design (doc 07 §2); all other tables carry `created_at`.
+    issued_at_tables = {"worker_credentials"}
     for name, table in _tables().items():
-        col = table.columns["created_at"]
+        if name in issued_at_tables:
+            col = table.columns["issued_at"]
+        else:
+            col = table.columns["created_at"]
         assert not col.nullable, name
         assert col.server_default is not None, name
 
