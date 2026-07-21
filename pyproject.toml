@@ -84,6 +84,9 @@ ignore_imports = [
     # this is the sanctioned router -> service -> repository layer path.
     "xiosync.api.routers.auth -> xiosync.services.identity",
     "xiosync.api.middleware -> xiosync.services.identity",
+    # Phase 4 Step 3: execution-plane and DLQ routers call WorkflowService.
+    "xiosync.api.routers.execution -> xiosync.services.workflows",
+    "xiosync.api.routers.dlq -> xiosync.services.workflows",
 ]
 
 [[tool.importlinter.contracts]]

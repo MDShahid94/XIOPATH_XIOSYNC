@@ -1,9 +1,18 @@
 # Current Position
 - **Phase**: Phase 4 — Workers & the execution plane
-- **Step**: Step 2 COMPLETE — WorkerService methods implemented, credential integration tests passing.
-- **Next Action**: Phase 4 Step 3 — Task lease protocol, execution-plane API endpoints, DLQ governance stubs (INV-EXEC-1/2/3, INV-DLQ-1/2/3/4).
-- **Last updated**: Session 035 (2026-07-21)
+- **Step**: Step 3 COMPLETE — Execution-plane API endpoints and DLQ governance stubs implemented and unit-tested.
+- **Next Action**: Phase 4 Step 4 — Task credential minting (INV-TASK-SEC-1/2): single-use, per-lease, bound to (task_id, worker_id).
+- **Last updated**: Session 036 (2026-07-22)
 - **Orchestrator**: XIOV0 (v0-agentic-pipeline)
+
+## Phase 4 Step 3 Progress
+| Component | Status |
+|-----------|--------|
+| xiosync/api/routers/execution.py — POST lease/heartbeat/complete (INV-EXEC-1/2/3) | done |
+| xiosync/api/routers/dlq.py — GET + POST propose/resolve (INV-DLQ-1/2/3/4) | done |
+| xiosync/api/app.py — routers wired at /api/v1 prefix | done |
+| pyproject.toml — importlinter allowlist updated for new router→service imports | done |
+| tests/unit/test_api_execution.py — 18 unit tests covering all HTTP contracts | done |
 
 ## Phase 4 Step 2 Progress
 | Component | Status |

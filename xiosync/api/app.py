@@ -18,6 +18,8 @@ from xiosync.api.middleware import (
     SecurityHeadersMiddleware,
 )
 from xiosync.api.routers.auth import router as auth_router
+from xiosync.api.routers.dlq import router as dlq_router
+from xiosync.api.routers.execution import router as execution_router
 from xiosync.persistence.database import create_database_engine
 from xiosync.persistence.identity import IdentityRepository
 from xiosync.platform.clock import Clock, SystemClock
@@ -40,6 +42,8 @@ def create_app(
     application.state.clock = clock
 
     application.include_router(auth_router, prefix="/api/v1")
+    application.include_router(execution_router, prefix="/api/v1")
+    application.include_router(dlq_router, prefix="/api/v1")
 
     @application.exception_handler(RequestValidationError)
     async def validation_problem(request: Request, exc: RequestValidationError) -> JSONResponse:
