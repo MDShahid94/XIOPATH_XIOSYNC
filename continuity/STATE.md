@@ -1,7 +1,7 @@
 # Current Position
 - **Phase**: Phase 4 — Workers & the execution plane
-- **Step**: Step 3 COMPLETE — Execution-plane API endpoints and DLQ governance stubs implemented and unit-tested.
-- **Next Action**: Phase 4 Step 4 — Task credential minting (INV-TASK-SEC-1/2): single-use, per-lease, bound to (task_id, worker_id).
+- **Step**: Step 4 COMPLETE — Task credential minting (INV-TASK-SEC-1/2) implemented.
+- **Next Action**: Phase 4 Exit Gate — worker-isolation tests (cannot mint token, below-tier execution, mutation bounds).
 - **Last updated**: Session 036 (2026-07-22)
 - **Orchestrator**: XIOV0 (v0-agentic-pipeline)
 
