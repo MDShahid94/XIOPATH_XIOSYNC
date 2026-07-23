@@ -87,6 +87,8 @@ ignore_imports = [
     # Phase 4 Step 3: execution-plane and DLQ routers call WorkflowService.
     "xiosync.api.routers.execution -> xiosync.services.workflows",
     "xiosync.api.routers.dlq -> xiosync.services.workflows",
+    # Phase 5 Step 3: the plugins router calls PluginService.
+    "xiosync.api.routers.plugins -> xiosync.services.plugins",
 ]
 
 [[tool.importlinter.contracts]]
