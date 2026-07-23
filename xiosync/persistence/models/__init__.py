@@ -23,6 +23,12 @@ from xiosync.persistence.models.ontology import (
     TypeRegistryAlias,
 )
 from xiosync.persistence.models.operations import Operation
+from xiosync.persistence.models.plugins import (
+    Plugin,
+    PluginInstallation,
+    PluginNetworkAllowRule,
+    PluginRpcMethod,
+)
 from xiosync.persistence.models.workers import WorkerCredential, WorkerEnrollment
 from xiosync.persistence.models.workflows import (
     DeadLetter,
@@ -44,6 +50,10 @@ __all__ = [
     "Memory",
     "Operation",
     "Organization",
+    "Plugin",
+    "PluginInstallation",
+    "PluginNetworkAllowRule",
+    "PluginRpcMethod",
     "Session",
     "Task",
     "TypeRegistry",

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import uuid
 
+import xiosync.persistence.models.plugins  # noqa: F401 — registers Phase 5 tables
 import xiosync.persistence.models.workers  # noqa: F401 — registers Phase 4 tables
 import xiosync.persistence.models.workflows  # noqa: F401 — registers Phase 3 tables
 from sqlalchemy import Table, UniqueConstraint
@@ -44,6 +45,11 @@ EXPECTED_TABLES = {
     # Phase 4 — worker enrollment & credentials (doc 07 §2)
     "worker_enrollments",
     "worker_credentials",
+    # Phase 5 — sandboxed plugins (doc 07 §5)
+    "plugins",
+    "plugin_rpc_methods",
+    "plugin_installations",
+    "plugin_network_allow_rules",
 }
 
 # organizations IS the tenant root; it carries no organization_id (doc 06 §5).
