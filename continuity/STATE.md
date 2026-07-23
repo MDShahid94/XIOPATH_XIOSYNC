@@ -1,9 +1,16 @@
 # Current Position
 - **Phase**: Phase 5 — Sandboxed Plugins
-- **Step**: Step 2 COMPLETE — Plugin Services layer and subprocess isolation execution boundary implemented.
-- **Next Action**: Phase 5 Step 3 — Plugin execution API router and SDK wiring.
+- **Step**: Step 3 COMPLETE — Plugin execution API router and SDK wiring.
+- **Next Action**: Phase 5 Exit Gate — plugin-sandbox integration tests (isolation properties, network deny, approval check).
 - **Last updated**: Phase 5 Session
 - **Orchestrator**: XIOV0 (v0-agentic-pipeline)
+
+## Phase 5 Step 3 Progress
+| Component | Status |
+|-----------|--------|
+| xiosync/api/routers/plugins.py — router implementation | done |
+| pyproject.toml — importlinter whitelist updated | done |
+| tests/unit/test_api_plugins.py — 23 unit tests passing | done |
 
 ## Phase 5 Step 2 Progress
 | Component | Status |
