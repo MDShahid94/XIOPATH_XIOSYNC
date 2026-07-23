@@ -1,9 +1,23 @@
 # Current Position
-- **Phase**: Phase 4 — Workers & the execution plane
-- **Step**: Step 4 COMPLETE — Task credential minting (INV-TASK-SEC-1/2) implemented.
-- **Next Action**: Phase 4 Exit Gate — worker-isolation tests (cannot mint token, below-tier execution, mutation bounds).
-- **Last updated**: Session 036 (2026-07-22)
+- **Phase**: Phase 5 — Sandboxed Plugins
+- **Step**: Step 2 COMPLETE — Plugin Services layer and subprocess isolation execution boundary implemented.
+- **Next Action**: Phase 5 Step 3 — Plugin execution API router and SDK wiring.
+- **Last updated**: Phase 5 Session
 - **Orchestrator**: XIOV0 (v0-agentic-pipeline)
+
+## Phase 5 Step 2 Progress
+| Component | Status |
+|-----------|--------|
+| xiosync/services/plugins.py — subprocess isolation execution boundary | done |
+| tests/unit/test_plugins_services.py — 46 unit tests passing | done |
+
+## Phase 5 Step 1 Progress
+| Component | Status |
+|-----------|--------|
+| domain/plugins.py — PluginManifest, PluginInstallation, RPC schemas | done |
+| persistence/models/plugins.py — SQLAlchemy models | done |
+| migrations/0009_plugins_sandbox.py | done |
+| tests/unit/test_plugins_domain.py — 39 unit tests passing | done |
 
 ## Phase 4 Step 3 Progress
 | Component | Status |
