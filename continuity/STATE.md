@@ -1,9 +1,14 @@
 # Current Position
-- **Phase**: Phase 5 — Sandboxed Plugins
-- **Step**: Step 3 COMPLETE — Plugin execution API router and SDK wiring.
-- **Next Action**: Phase 5 Exit Gate — plugin-sandbox integration tests (isolation properties, network deny, approval check).
-- **Last updated**: Phase 5 Session
+- **Phase**: Phase 6 — Frontend
+- **Step**: Step 1 — Initialize frontend architecture (generated typed API client, token transport, WS handshake).
+- **Next Action**: Set up the frontend scaffold, routing, and API client layer.
+- **Last updated**: Phase 5 Exit Gate Session
 - **Orchestrator**: XIOV0 (v0-agentic-pipeline)
+
+## Phase 5 Exit Gate Progress
+| Component | Status |
+|-----------|--------|
+| tests/integration/test_plugin_sandbox.py — Integration tests verifying plugin isolation boundaries | done |
 
 ## Phase 5 Step 3 Progress
 | Component | Status |
