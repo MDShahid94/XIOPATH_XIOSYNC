@@ -4,15 +4,22 @@
  * module becomes generated typed hooks; the transport in `client.ts` stays.
  */
 import type {
+  AdminConfigResponse,
   ApproveRequest,
+  CapabilitiesResponse,
   DashboardSummary,
   DeadLetterResponse,
   DeadLettersResponse,
+  EventsResponse,
+  GrantsResponse,
   InstallationResponse,
   InstallationsResponse,
   InstallRequest,
   LoginRequest,
   LogoutResponse,
+  MemoryResponse,
+  OrgSettings,
+  OrgsResponse,
   PluginCatalogResponse,
   ProposeRequest,
   ProposeResponse,
@@ -21,6 +28,7 @@ import type {
   ResolveResponse,
   RunsResponse,
   TokenResponse,
+  WorkersResponse,
   WorkflowsResponse,
 } from "@/api/generated/schema";
 import { request } from "./client";
@@ -172,5 +180,101 @@ export const dlqApi = {
       `/dlq/${encodeURIComponent(deadLetterId)}/resolve`,
       { body },
     );
+  },
+} as const;
+
+/**
+ * Capability registry (doc 05 §2). Org-scoped read of the typed permission
+ * vocabulary; the server derives the org from the session (INV-FE-5).
+ */
+export const capabilitiesApi = {
+  list(signal?: AbortSignal): Promise<CapabilitiesResponse> {
+    return request<CapabilitiesResponse>("/capabilities", {
+      ...(signal ? { signal } : {}),
+    });
+  },
+} as const;
+
+/**
+ * Grants (doc 05 §3). Org-scoped read of capability→actor bindings; only
+ * `active` grants authorize (INV-GRANT-1). Admin-visible.
+ */
+export const grantsApi = {
+  list(signal?: AbortSignal): Promise<GrantsResponse> {
+    return request<GrantsResponse>("/grants", {
+      ...(signal ? { signal } : {}),
+    });
+  },
+} as const;
+
+/**
+ * Event/audit stream (doc 06 §1). Org-scoped, append-only read of recent
+ * activity.
+ */
+export const eventsApi = {
+  list(signal?: AbortSignal): Promise<EventsResponse> {
+    return request<EventsResponse>("/events", {
+      ...(signal ? { signal } : {}),
+    });
+  },
+} as const;
+
+/**
+ * Memory graph (doc 09 §2). Org-scoped read of promoted intents/actions in the
+ * tiered execution memory.
+ */
+export const memoryApi = {
+  list(signal?: AbortSignal): Promise<MemoryResponse> {
+    return request<MemoryResponse>("/memory", {
+      ...(signal ? { signal } : {}),
+    });
+  },
+} as const;
+
+/**
+ * Organizations (doc 05 §3.1). Lists the orgs the current actor belongs to;
+ * the server scopes to the session actor (INV-FE-5).
+ */
+export const orgsApi = {
+  list(signal?: AbortSignal): Promise<OrgsResponse> {
+    return request<OrgsResponse>("/orgs", {
+      ...(signal ? { signal } : {}),
+    });
+  },
+} as const;
+
+/**
+ * Active-org settings (doc 05 §3.1). Read of the current organization's
+ * editable configuration surface.
+ */
+export const settingsApi = {
+  get(signal?: AbortSignal): Promise<OrgSettings> {
+    return request<OrgSettings>("/settings", {
+      ...(signal ? { signal } : {}),
+    });
+  },
+} as const;
+
+/**
+ * Worker pool (doc 07 §2). Org-scoped read of each worker's liveness. Admin
+ * visibility only (route guard enforces, server re-checks).
+ */
+export const workersApi = {
+  list(signal?: AbortSignal): Promise<WorkersResponse> {
+    return request<WorkersResponse>("/workers", {
+      ...(signal ? { signal } : {}),
+    });
+  },
+} as const;
+
+/**
+ * Platform admin (doc 05 §3.3). Runtime security configuration read. Mirrors
+ * `GET /admin/config`; platform-admin only (route guard + server re-check).
+ */
+export const adminApi = {
+  config(signal?: AbortSignal): Promise<AdminConfigResponse> {
+    return request<AdminConfigResponse>("/admin/config", {
+      ...(signal ? { signal } : {}),
+    });
   },
 } as const;

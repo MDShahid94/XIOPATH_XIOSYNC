@@ -6,19 +6,61 @@
  * users, INV-FE-4).
  */
 import { NavLink, Outlet } from "react-router-dom";
-import { ROUTES } from "@/app/routes";
-import { useSession } from "@/app/session/useSession";
+import { ROUTES, type RouteMeta } from "@/app/routes";
+import { satisfies } from "@/lib/authority";
+import { useAuthority, useSession } from "@/app/session/useSession";
 
 interface NavItem {
-  to: string;
+  route: RouteMeta;
   label: string;
 }
 
-const NAV_ITEMS: readonly NavItem[] = [
-  { to: ROUTES.dashboard.path, label: "Dashboard" },
-  { to: ROUTES.workflows.path, label: "Workflows" },
-  { to: ROUTES.runs.path, label: "Runs" },
-  { to: ROUTES.plugins.path, label: "Plugins" },
+interface NavSection {
+  heading: string;
+  items: readonly NavItem[];
+}
+
+/**
+ * Navigation grouped by concern. Each item carries its route's authority
+ * requirement so the shell can hide links the current authority cannot satisfy
+ * — the guard still fail-closes on direct navigation (INV-FE-4), this is UX.
+ */
+const NAV_SECTIONS: readonly NavSection[] = [
+  {
+    heading: "Overview",
+    items: [{ route: ROUTES.dashboard, label: "Dashboard" }],
+  },
+  {
+    heading: "Execution",
+    items: [
+      { route: ROUTES.workflows, label: "Workflows" },
+      { route: ROUTES.runs, label: "Runs" },
+      { route: ROUTES.workers, label: "Workers" },
+    ],
+  },
+  {
+    heading: "Authorization",
+    items: [
+      { route: ROUTES.capabilities, label: "Capabilities" },
+      { route: ROUTES.grants, label: "Grants" },
+      { route: ROUTES.plugins, label: "Plugins" },
+    ],
+  },
+  {
+    heading: "Observability",
+    items: [
+      { route: ROUTES.events, label: "Events" },
+      { route: ROUTES.memory, label: "Memory" },
+    ],
+  },
+  {
+    heading: "Administration",
+    items: [
+      { route: ROUTES.orgs, label: "Organizations" },
+      { route: ROUTES.settings, label: "Settings" },
+      { route: ROUTES.admin, label: "Admin" },
+    ],
+  },
 ];
 
 function navLinkClass({ isActive }: { isActive: boolean }): string {
@@ -31,10 +73,18 @@ function navLinkClass({ isActive }: { isActive: boolean }): string {
 
 export function AppLayout() {
   const { session, logout } = useSession();
+  const authority = useAuthority();
 
   if (!session) {
     return <Outlet />;
   }
+
+  const visibleSections = NAV_SECTIONS.map((section) => ({
+    ...section,
+    items: section.items.filter((item) =>
+      satisfies(authority, item.route.requirement),
+    ),
+  })).filter((section) => section.items.length > 0);
 
   return (
     <div className="min-h-screen bg-background md:flex">
@@ -49,18 +99,25 @@ export function AppLayout() {
         </div>
 
         <nav
-          className="flex gap-1 overflow-x-auto px-3 pb-3 md:flex-col md:overflow-visible md:pb-0"
+          className="flex gap-1 overflow-x-auto px-3 pb-3 md:flex-col md:gap-4 md:overflow-visible md:pb-6"
           aria-label="Primary"
         >
-          {NAV_ITEMS.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === ROUTES.dashboard.path}
-              className={navLinkClass}
-            >
-              {item.label}
-            </NavLink>
+          {visibleSections.map((section) => (
+            <div key={section.heading} className="flex gap-1 md:flex-col md:gap-1">
+              <p className="hidden px-3 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground md:block">
+                {section.heading}
+              </p>
+              {section.items.map((item) => (
+                <NavLink
+                  key={item.route.path}
+                  to={item.route.path}
+                  end={item.route.path === ROUTES.dashboard.path}
+                  className={navLinkClass}
+                >
+                  {item.label}
+                </NavLink>
+              ))}
+            </div>
           ))}
         </nav>
       </aside>

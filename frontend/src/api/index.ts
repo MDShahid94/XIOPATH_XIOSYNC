@@ -1,11 +1,19 @@
 export { apiClient, request } from "./client";
 export type { RequestOptions } from "./client";
 export {
+  adminApi,
   authApi,
+  capabilitiesApi,
   dashboardApi,
   dlqApi,
+  eventsApi,
+  grantsApi,
+  memoryApi,
+  orgsApi,
   pluginsApi,
   runsApi,
+  settingsApi,
+  workersApi,
   workflowsApi,
 } from "./endpoints";
 export { tokenStore } from "./tokenStore";

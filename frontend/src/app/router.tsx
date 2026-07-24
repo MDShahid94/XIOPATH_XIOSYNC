@@ -23,6 +23,16 @@ const WorkflowsPage = lazy(
   () => import("@/features/workflows/WorkflowsPage"),
 );
 const RunsPage = lazy(() => import("@/features/runs/RunsPage"));
+const CapabilitiesPage = lazy(
+  () => import("@/features/capabilities/CapabilitiesPage"),
+);
+const EventsPage = lazy(() => import("@/features/events/EventsPage"));
+const MemoryPage = lazy(() => import("@/features/memory/MemoryPage"));
+const WorkersPage = lazy(() => import("@/features/workers/WorkersPage"));
+const GrantsPage = lazy(() => import("@/features/grants/GrantsPage"));
+const OrgsPage = lazy(() => import("@/features/orgs/OrgsPage"));
+const SettingsPage = lazy(() => import("@/features/settings/SettingsPage"));
+const AdminPage = lazy(() => import("@/features/admin/AdminPage"));
 
 function guarded(
   route: RouteMeta,
@@ -63,6 +73,42 @@ export function AppRouter() {
         <Route
           path={ROUTES.runs.path}
           element={guarded(ROUTES.runs, RunsPage, "runs")}
+        />
+        <Route
+          path={ROUTES.capabilities.path}
+          element={guarded(
+            ROUTES.capabilities,
+            CapabilitiesPage,
+            "capabilities",
+          )}
+        />
+        <Route
+          path={ROUTES.events.path}
+          element={guarded(ROUTES.events, EventsPage, "events")}
+        />
+        <Route
+          path={ROUTES.memory.path}
+          element={guarded(ROUTES.memory, MemoryPage, "memory")}
+        />
+        <Route
+          path={ROUTES.workers.path}
+          element={guarded(ROUTES.workers, WorkersPage, "workers")}
+        />
+        <Route
+          path={ROUTES.grants.path}
+          element={guarded(ROUTES.grants, GrantsPage, "grants")}
+        />
+        <Route
+          path={ROUTES.orgs.path}
+          element={guarded(ROUTES.orgs, OrgsPage, "organizations")}
+        />
+        <Route
+          path={ROUTES.settings.path}
+          element={guarded(ROUTES.settings, SettingsPage, "settings")}
+        />
+        <Route
+          path={ROUTES.admin.path}
+          element={guarded(ROUTES.admin, AdminPage, "admin")}
         />
       </Route>
       <Route path="*" element={<Navigate to={ROUTES.dashboard.path} replace />} />
