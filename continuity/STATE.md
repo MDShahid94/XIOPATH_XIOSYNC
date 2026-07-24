@@ -1,9 +1,16 @@
 # Current Position
 - **Phase**: Phase 6 — Frontend
-- **Step**: Step 1 — Initialize frontend architecture (generated typed API client, token transport, WS handshake).
-- **Next Action**: Set up the frontend scaffold, routing, and API client layer.
-- **Last updated**: Phase 5 Exit Gate Session
+- **Step**: Step 1 COMPLETE — Initialize frontend architecture (generated typed API client, token transport, WS handshake).
+- **Next Action**: Phase 6 Step 2 — Integrate generated API client with React Query and build out auth UI hooks.
+- **Last updated**: Phase 6 Step 1 Session
 - **Orchestrator**: XIOV0 (v0-agentic-pipeline)
+
+## Phase 6 Step 1 Progress
+| Component | Status |
+|-----------|--------|
+| frontend/ — React + TS Vite scaffold | done |
+| frontend/src/api — Strict token store and endpoints | done |
+| frontend/src/app — Route permission matrix guards | done |
 
 ## Phase 5 Exit Gate Progress
 | Component | Status |
