@@ -3,7 +3,13 @@
  * three status accent tokens (success / warning / danger) plus a neutral muted
  * tone, so the palette stays small and the meaning is consistent everywhere.
  */
-import type { InstallationState, PluginState } from "@/api/generated/schema";
+import type {
+  DeadLetterState,
+  InstallationState,
+  PluginState,
+  WorkflowRunState,
+  WorkflowState,
+} from "@/api/generated/schema";
 
 type Tone = "success" | "warning" | "danger" | "neutral";
 
@@ -63,4 +69,58 @@ export function PluginStatusBadge({ state }: { state: PluginState }) {
       {state === "registered" ? "Registered" : "Deprecated"}
     </Pill>
   );
+}
+
+const WORKFLOW_TONE: Record<WorkflowState, Tone> = {
+  draft: "neutral",
+  published: "success",
+  deprecated: "neutral",
+};
+
+const WORKFLOW_LABEL: Record<WorkflowState, string> = {
+  draft: "Draft",
+  published: "Published",
+  deprecated: "Deprecated",
+};
+
+export function WorkflowStatusBadge({ state }: { state: WorkflowState }) {
+  return <Pill tone={WORKFLOW_TONE[state]}>{WORKFLOW_LABEL[state]}</Pill>;
+}
+
+const RUN_TONE: Record<WorkflowRunState, Tone> = {
+  queued: "neutral",
+  running: "warning",
+  paused: "warning",
+  succeeded: "success",
+  failed: "danger",
+  cancelled: "neutral",
+};
+
+const RUN_LABEL: Record<WorkflowRunState, string> = {
+  queued: "Queued",
+  running: "Running",
+  paused: "Paused",
+  succeeded: "Succeeded",
+  failed: "Failed",
+  cancelled: "Cancelled",
+};
+
+export function RunStatusBadge({ state }: { state: WorkflowRunState }) {
+  return <Pill tone={RUN_TONE[state]}>{RUN_LABEL[state]}</Pill>;
+}
+
+const DEAD_LETTER_TONE: Record<DeadLetterState, Tone> = {
+  open: "danger",
+  investigating: "warning",
+  resolved: "success",
+};
+
+const DEAD_LETTER_LABEL: Record<DeadLetterState, string> = {
+  open: "Open",
+  investigating: "Investigating",
+  resolved: "Resolved",
+};
+
+export function DeadLetterStatusBadge({ state }: { state: DeadLetterState }) {
+  return <Pill tone={DEAD_LETTER_TONE[state]}>{DEAD_LETTER_LABEL[state]}</Pill>;
 }

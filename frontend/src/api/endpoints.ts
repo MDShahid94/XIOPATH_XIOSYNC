@@ -6,14 +6,22 @@
 import type {
   ApproveRequest,
   DashboardSummary,
+  DeadLetterResponse,
+  DeadLettersResponse,
   InstallationResponse,
   InstallationsResponse,
   InstallRequest,
   LoginRequest,
   LogoutResponse,
   PluginCatalogResponse,
+  ProposeRequest,
+  ProposeResponse,
   RefreshRequest,
+  ResolveRequest,
+  ResolveResponse,
+  RunsResponse,
   TokenResponse,
+  WorkflowsResponse,
 } from "@/api/generated/schema";
 import { request } from "./client";
 import { tokenStore } from "./tokenStore";
@@ -101,6 +109,68 @@ export const pluginsApi = {
     return request<InstallationResponse>(
       `/plugins/installations/${encodeURIComponent(installationId)}/activate`,
       { method: "POST" },
+    );
+  },
+} as const;
+
+/**
+ * Workflow definitions (doc 04 §2.1). Org-scoped read; the server derives the
+ * org from the session and never trusts an org id in the URL (INV-FE-5).
+ */
+export const workflowsApi = {
+  list(signal?: AbortSignal): Promise<WorkflowsResponse> {
+    return request<WorkflowsResponse>("/workflows", {
+      ...(signal ? { signal } : {}),
+    });
+  },
+} as const;
+
+/**
+ * Workflow runs (doc 03 §4.4). Org-scoped read of every run's current
+ * lifecycle state.
+ */
+export const runsApi = {
+  list(signal?: AbortSignal): Promise<RunsResponse> {
+    return request<RunsResponse>("/runs", {
+      ...(signal ? { signal } : {}),
+    });
+  },
+} as const;
+
+/**
+ * Dead-letter governance (doc 07 §4, INV-DLQ-1/2/3). Listing/inspecting are
+ * reads; `propose` advances open → investigating with an advisory diagnosis
+ * (INV-DLQ-2), and `resolve` closes investigating → resolved under mandatory
+ * explicit approval (INV-DLQ-3). Nothing here auto-resolves a record.
+ */
+export const dlqApi = {
+  list(signal?: AbortSignal): Promise<DeadLettersResponse> {
+    return request<DeadLettersResponse>("/dlq", {
+      ...(signal ? { signal } : {}),
+    });
+  },
+  get(deadLetterId: string, signal?: AbortSignal): Promise<DeadLetterResponse> {
+    return request<DeadLetterResponse>(
+      `/dlq/${encodeURIComponent(deadLetterId)}`,
+      { ...(signal ? { signal } : {}) },
+    );
+  },
+  propose(
+    deadLetterId: string,
+    body: ProposeRequest,
+  ): Promise<ProposeResponse> {
+    return request<ProposeResponse>(
+      `/dlq/${encodeURIComponent(deadLetterId)}/propose`,
+      { body },
+    );
+  },
+  resolve(
+    deadLetterId: string,
+    body: ResolveRequest,
+  ): Promise<ResolveResponse> {
+    return request<ResolveResponse>(
+      `/dlq/${encodeURIComponent(deadLetterId)}/resolve`,
+      { body },
     );
   },
 } as const;

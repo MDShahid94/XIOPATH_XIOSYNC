@@ -132,3 +132,103 @@ export interface InstallRequest {
 export interface ApproveRequest {
   approved_by: string;
 }
+
+/* ------------------------------------------------------------------------- *
+ * Durable-execution spine (doc 04 §2.1, doc 07 §1/§4). Mirrors
+ * `xiosync/services/workflows.py` records and `xiosync/api/routers/dlq.py`.
+ * The list reads below are the org-scoped control-plane reads the OpenAPI
+ * generator will formalize; DLQ propose/resolve mirror the mounted router
+ * exactly (INV-DLQ-2/3).
+ * ------------------------------------------------------------------------- */
+
+/** A workflow definition's lifecycle state (domain/workflows.py). */
+export type WorkflowState = "draft" | "published" | "deprecated";
+
+/** Read-model for one `workflows` row. */
+export interface WorkflowSummary {
+  id: string;
+  organization_id: string;
+  name: string;
+  version: number;
+  state: WorkflowState;
+  created_by: string;
+}
+
+/** `GET /workflows` response body. */
+export interface WorkflowsResponse {
+  workflows: WorkflowSummary[];
+  total: number;
+}
+
+/** A workflow run's lifecycle state (doc 03 §4.4). */
+export type WorkflowRunState =
+  | "queued"
+  | "running"
+  | "paused"
+  | "succeeded"
+  | "failed"
+  | "cancelled";
+
+/** Read-model for one `workflow_runs` row. */
+export interface WorkflowRunSummary {
+  id: string;
+  organization_id: string;
+  workflow_id: string;
+  state: WorkflowRunState;
+  initiated_by: string;
+}
+
+/** `GET /runs` response body. */
+export interface RunsResponse {
+  runs: WorkflowRunSummary[];
+  total: number;
+}
+
+/**
+ * Dead-letter lifecycle (INV-DLQ-1/2/3): a failed task lands `open`; a
+ * governed `propose` advances it to `investigating`; an explicitly approved
+ * `resolve` closes it as `resolved`. Nothing auto-resolves.
+ */
+export type DeadLetterState = "open" | "investigating" | "resolved";
+
+/** Read-model for a `dead_letters` row (mirrors dlq.py DeadLetterResponse). */
+export interface DeadLetterResponse {
+  id: string;
+  organization_id: string;
+  task_id: string;
+  state: DeadLetterState;
+  failure_reason?: string | null;
+  proposal_id?: string | null;
+  diagnosis?: Record<string, unknown> | null;
+}
+
+/** `GET /dlq` response body. */
+export interface DeadLettersResponse {
+  dead_letters: DeadLetterResponse[];
+  total: number;
+}
+
+/** `POST /dlq/{dead_letter_id}/propose` request body (INV-DLQ-2). */
+export interface ProposeRequest {
+  /** Advisory, machine-readable diagnosis; never mutates the live spec. */
+  diagnosis: Record<string, unknown>;
+}
+
+/** `POST /dlq/{dead_letter_id}/propose` response body. */
+export interface ProposeResponse {
+  dead_letter_id: string;
+  proposal_id: string;
+  state: "investigating";
+}
+
+/** `POST /dlq/{dead_letter_id}/resolve` request body (INV-DLQ-3). */
+export interface ResolveRequest {
+  /** Must be `true`; auto-resolution is forbidden (INV-DLQ-3). */
+  explicit_approval: boolean;
+}
+
+/** `POST /dlq/{dead_letter_id}/resolve` response body. */
+export interface ResolveResponse {
+  dead_letter_id: string;
+  state: "resolved";
+}

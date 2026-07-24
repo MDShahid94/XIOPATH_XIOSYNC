@@ -19,6 +19,10 @@ import { ROUTES, type RouteMeta } from "@/app/routes";
 const LoginPage = lazy(() => import("@/features/auth/LoginPage"));
 const DashboardPage = lazy(() => import("@/features/dashboard/DashboardPage"));
 const PluginsPage = lazy(() => import("@/features/plugins/PluginsPage"));
+const WorkflowsPage = lazy(
+  () => import("@/features/workflows/WorkflowsPage"),
+);
+const RunsPage = lazy(() => import("@/features/runs/RunsPage"));
 
 function guarded(
   route: RouteMeta,
@@ -51,6 +55,14 @@ export function AppRouter() {
         <Route
           path={ROUTES.plugins.path}
           element={guarded(ROUTES.plugins, PluginsPage, "plugins")}
+        />
+        <Route
+          path={ROUTES.workflows.path}
+          element={guarded(ROUTES.workflows, WorkflowsPage, "workflows")}
+        />
+        <Route
+          path={ROUTES.runs.path}
+          element={guarded(ROUTES.runs, RunsPage, "runs")}
         />
       </Route>
       <Route path="*" element={<Navigate to={ROUTES.dashboard.path} replace />} />

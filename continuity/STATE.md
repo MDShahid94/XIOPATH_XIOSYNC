@@ -1,9 +1,15 @@
 # Current Position
 - **Phase**: Phase 6 — Frontend
-- **Step**: Step 3 COMPLETE — Dashboard and Plugin UI data fetching and visual implementation.
-- **Next Action**: Phase 6 Step 4 (or Phase 7).
-- **Last updated**: Phase 6 Step 3 Session
+- **Step**: Step 4 COMPLETE — Workflows, Runs, and DLQ resolution UI implementation.
+- **Next Action**: Phase 6 Step 5 (Workers, Capabilities, Grants, Events, Memory, Orgs, Settings, Admin UI).
+- **Last updated**: Phase 6 Step 4 Session
 - **Orchestrator**: XIOV0 (v0-agentic-pipeline)
+
+## Phase 6 Step 4 Progress
+| Component | Status |
+|-----------|--------|
+| frontend/src/features/workflows — Workflows React Query hooks and UI | done |
+| frontend/src/features/runs — Runs and DLQ React Query hooks and UI | done |
 
 ## Phase 6 Step 3 Progress
 | Component | Status |

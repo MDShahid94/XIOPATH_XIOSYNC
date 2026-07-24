@@ -16,6 +16,8 @@ interface NavItem {
 
 const NAV_ITEMS: readonly NavItem[] = [
   { to: ROUTES.dashboard.path, label: "Dashboard" },
+  { to: ROUTES.workflows.path, label: "Workflows" },
+  { to: ROUTES.runs.path, label: "Runs" },
   { to: ROUTES.plugins.path, label: "Plugins" },
 ];
 
