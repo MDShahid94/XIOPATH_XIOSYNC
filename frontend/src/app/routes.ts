@@ -27,6 +27,11 @@ export const ROUTES = {
     requirementLabel: "organization membership",
     requirement: { access: "authenticated" },
   },
+  plugins: {
+    path: "/plugins",
+    requirementLabel: "organization membership",
+    requirement: { access: "authenticated", minMembershipRole: "org_member" },
+  },
   actors: {
     path: "/actors",
     requirementLabel: "organization membership",

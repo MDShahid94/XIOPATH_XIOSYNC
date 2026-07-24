@@ -1,3 +1,63 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/*
+ * Semantic design tokens (doc 08). A small palette: one primary (blue), a slate
+ * neutral ramp, and three status accents the plugin/run states map onto. Colours
+ * are consumed through Tailwind's `bg-*`/`text-*` classes, never hard-coded.
+ */
+@layer base {
+  :root {
+    --color-background: #f6f7f9;
+    --color-foreground: #0f172a;
+
+    --color-card: #ffffff;
+    --color-card-foreground: #0f172a;
+
+    --color-muted: #eef1f5;
+    --color-muted-foreground: #64748b;
+
+    --color-primary: #2563eb;
+    --color-primary-foreground: #ffffff;
+
+    --color-border: #e2e8f0;
+    --color-ring: #2563eb;
+
+    --color-success: #047857;
+    --color-success-foreground: #ffffff;
+    --color-success-soft: #d1fae5;
+
+    --color-warning: #b45309;
+    --color-warning-foreground: #ffffff;
+    --color-warning-soft: #fef3c7;
+
+    --color-danger: #b91c1c;
+    --color-danger-foreground: #ffffff;
+    --color-danger-soft: #fee2e2;
+
+    --radius: 0.75rem;
+
+    color-scheme: light;
+  }
+
+  html {
+    @apply bg-background text-foreground;
+  }
+
+  body {
+    @apply font-sans antialiased leading-relaxed;
+  }
+
+  *:focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+}
+
+/* Spinner used by the route/loading fallbacks (doc 08 §5). */
+@layer components {
+  .spinner {
+    @apply inline-block h-4 w-4 rounded-full border-2 border-muted-foreground border-t-primary opacity-50;
+    animation: spin 0.6s linear infinite;
+  }
+}

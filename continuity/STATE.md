@@ -1,9 +1,16 @@
 # Current Position
 - **Phase**: Phase 6 — Frontend
-- **Step**: Step 2 COMPLETE — Integrate generated API client with React Query and build out auth UI hooks.
-- **Next Action**: Phase 6 Step 3 — Dashboard and Plugin UI data fetching and visual implementation.
-- **Last updated**: Phase 6 Step 2 Session
+- **Step**: Step 3 COMPLETE — Dashboard and Plugin UI data fetching and visual implementation.
+- **Next Action**: Phase 6 Step 4 (or Phase 7).
+- **Last updated**: Phase 6 Step 3 Session
 - **Orchestrator**: XIOV0 (v0-agentic-pipeline)
+
+## Phase 6 Step 3 Progress
+| Component | Status |
+|-----------|--------|
+| frontend/src/features/dashboard — Dashboard React Query hooks and UI | done |
+| frontend/src/features/plugins — Plugins React Query hooks and UI | done |
+| frontend/src/app/layout — App Layout and Navigation | done |
 
 ## Phase 6 Step 2 Progress
 | Component | Status |
@@ -16,6 +23,7 @@
 |-----------|--------|
 | frontend/ — React + TS Vite scaffold | done |
 | frontend/src/api — Strict token store and endpoints | done |
+| frontend/src/app — Route permission matrix guards | done |
 | frontend/src/app — Route permission matrix guards | done |
 
 ## Phase 5 Exit Gate Progress

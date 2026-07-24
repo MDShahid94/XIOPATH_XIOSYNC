@@ -4,8 +4,14 @@
  * module becomes generated typed hooks; the transport in `client.ts` stays.
  */
 import type {
+  ApproveRequest,
+  DashboardSummary,
+  InstallationResponse,
+  InstallationsResponse,
+  InstallRequest,
   LoginRequest,
   LogoutResponse,
+  PluginCatalogResponse,
   RefreshRequest,
   TokenResponse,
 } from "@/api/generated/schema";
@@ -42,5 +48,59 @@ export const authApi = {
     } catch {
       return null;
     }
+  },
+} as const;
+
+/**
+ * Org-scoped dashboard summary (doc 08 §3). The server derives the org from the
+ * session; the client never passes an org id in the URL (INV-FE-5).
+ */
+export const dashboardApi = {
+  summary(signal?: AbortSignal): Promise<DashboardSummary> {
+    return request<DashboardSummary>("/dashboard/summary", {
+      ...(signal ? { signal } : {}),
+    });
+  },
+} as const;
+
+/**
+ * Sandboxed-plugin control plane (doc 07 §5). Listing is a read; installing is
+ * the first, approval-gated step of the lifecycle (INV-PLUGIN-3) — approve and
+ * activate are separate, admin-only transitions.
+ */
+export const pluginsApi = {
+  listCatalog(signal?: AbortSignal): Promise<PluginCatalogResponse> {
+    return request<PluginCatalogResponse>("/plugins", {
+      ...(signal ? { signal } : {}),
+    });
+  },
+  listInstallations(signal?: AbortSignal): Promise<InstallationsResponse> {
+    return request<InstallationsResponse>("/plugins/installations", {
+      ...(signal ? { signal } : {}),
+    });
+  },
+  install(
+    pluginId: string,
+    body: InstallRequest,
+  ): Promise<InstallationResponse> {
+    return request<InstallationResponse>(
+      `/plugins/${encodeURIComponent(pluginId)}/install`,
+      { body },
+    );
+  },
+  approve(
+    installationId: string,
+    body: ApproveRequest,
+  ): Promise<InstallationResponse> {
+    return request<InstallationResponse>(
+      `/plugins/installations/${encodeURIComponent(installationId)}/approve`,
+      { body },
+    );
+  },
+  activate(installationId: string): Promise<InstallationResponse> {
+    return request<InstallationResponse>(
+      `/plugins/installations/${encodeURIComponent(installationId)}/activate`,
+      { method: "POST" },
+    );
   },
 } as const;
