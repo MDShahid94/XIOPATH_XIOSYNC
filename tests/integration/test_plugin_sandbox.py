@@ -50,7 +50,6 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
-
 from xiosync.api.app import create_app
 from xiosync.domain.context import MembershipRole, OrgContext, PlatformRole
 from xiosync.domain.plugins import (
@@ -314,7 +313,7 @@ class TestEmptyAllowlistDeniesAll:
         assert network_allows([rule], "api.internal", 443, "http") is False
 
     @pytest.mark.parametrize(
-        "sentinel", ["*", "0.0.0.0", "0.0.0.0/0", "::", "::/0", "any", "all", ""]
+        "sentinel", ["*", "0.0.0.0", "0.0.0.0/0", "::", "::/0", "any", "all", ""]  # noqa: S104
     )
     def test_allow_all_sentinels_are_rejected_at_construction(self, sentinel: str) -> None:
         """INV-PLUGIN-4: no single rule may smuggle in an 'allow everything' policy."""

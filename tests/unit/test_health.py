@@ -13,7 +13,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
-
 from xiosync.core.health import (
     DatabaseConnectionError,
     MigrationNotAtHeadError,
@@ -193,7 +192,7 @@ class TestCheckReadiness:
 
     def test_check_readiness_ready(self) -> None:
         """Return ready state when all checks pass."""
-        with patch("xiosync.core.health.verify_migrations_at_head") as mock_verify:
+        with patch("xiosync.core.health.verify_migrations_at_head"):
             mock_engine = MagicMock(spec=Engine)
             state = check_readiness(mock_engine)
 

@@ -13,9 +13,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-
 from xiosync.api.routers.health import router as health_router
-from xiosync.core.health import DatabaseConnectionError, MigrationNotAtHeadError, ReadinessState
+from xiosync.core.health import ReadinessState
 
 
 @pytest.fixture
@@ -177,7 +176,10 @@ class TestReadinessScenarios:
                 is_live=True,
                 is_ready=False,
                 live_reason="Process is running",
-                ready_reason="Database schema is at revision 5f7f5f1793c7, but head is 14c2c1f29abe",
+                ready_reason=(
+                    "Database schema is at revision 5f7f5f1793c7,"
+                    " but head is 14c2c1f29abe"
+                ),
             )
 
             client = TestClient(app_with_health)

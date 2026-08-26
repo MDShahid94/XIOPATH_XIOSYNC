@@ -10,6 +10,7 @@ Normative references:
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from typing import Any
 
 from fastapi import FastAPI, Request
@@ -25,12 +26,19 @@ from xiosync.api.middleware import (
     RequestIDMiddleware,
     SecurityHeadersMiddleware,
 )
+from xiosync.api.middleware.rate_limit import RateLimitMiddleware
 from xiosync.api.routers.auth import router as auth_router
 from xiosync.api.routers.dlq import router as dlq_router
 from xiosync.api.routers.execution import router as execution_router
 from xiosync.api.routers.health import router as health_router
 from xiosync.api.routers.plugins import router as plugins_router
 from xiosync.core.health import verify_migrations_at_head
+from xiosync.core.rate_limit import (
+    RateLimitConfig,
+    RateLimiter,
+    create_rate_limiter,
+    get_rate_limit_config,
+)
 from xiosync.persistence.database import create_database_engine
 from xiosync.persistence.identity import IdentityRepository
 from xiosync.platform.clock import Clock, SystemClock
@@ -47,6 +55,8 @@ def create_app(
     engine: Engine,
     clock: Clock,
     max_body_bytes: int = DEFAULT_MAX_BODY_BYTES,
+    rate_limiter: RateLimiter | None = None,
+    rate_limit_config: Callable[[str], RateLimitConfig] | None = None,
 ) -> FastAPI:
     """Compose an app from explicit dependencies (the contract-test seam).
 
@@ -84,6 +94,12 @@ def create_app(
 
     # Starlette wraps each newly-added middleware around the previous stack.
     # Add in reverse so the effective order is request-id -> security -> size -> auth.
+    if rate_limiter is not None and rate_limit_config is not None:
+        application.add_middleware(
+            RateLimitMiddleware,
+            rate_limiter=rate_limiter,
+            config_fn=rate_limit_config,
+        )
     application.add_middleware(
         AuthenticationMiddleware,
         session_service=session_service,
@@ -137,7 +153,19 @@ def create_production_app() -> FastAPI:
     # Step 5: Wire remaining services
     service = SessionService(IdentityRepository(engine), config.auth_secret)
     logger.info("All startup checks passed; application ready")
-    return create_app(session_service=service, engine=engine, clock=SystemClock())
+    limiter = create_rate_limiter(config.redis_url) if config.redis_url else None
+    config_fn = (
+        (lambda route_class: get_rate_limit_config(route_class, config))
+        if limiter
+        else None
+    )
+    return create_app(
+        session_service=service,
+        engine=engine,
+        clock=SystemClock(),
+        rate_limiter=limiter,
+        rate_limit_config=config_fn,
+    )
 
 
 class _LazyProductionApp:

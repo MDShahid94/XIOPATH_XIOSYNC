@@ -12,9 +12,8 @@ from __future__ import annotations
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 from xiosync.api.app import create_production_app
-from xiosync.core.health import DatabaseConnectionError, MigrationNotAtHeadError
+from xiosync.core.health import MigrationNotAtHeadError
 from xiosync.platform.config import ConfigError
 
 
@@ -33,7 +32,7 @@ class TestStartupFailFast:
         """Startup fails fast when database URL is invalid."""
         with patch("xiosync.api.app.load_config") as mock_load:
             with patch("xiosync.api.app.create_database_engine") as mock_engine:
-                with patch("xiosync.api.app.configure_logging") as mock_logging:
+                with patch("xiosync.api.app.configure_logging"):
                     mock_config = MagicMock()
                     mock_config.environment = "production"
                     mock_config.log_level = "INFO"
@@ -70,7 +69,7 @@ class TestStartupFailFast:
             with patch("xiosync.api.app.create_database_engine") as mock_engine:
                 with patch("xiosync.api.app.verify_migrations_at_head") as mock_verify:
                     with patch("xiosync.api.app.configure_logging") as mock_logging:
-                        with patch("xiosync.api.app.SessionService") as mock_session:
+                        with patch("xiosync.api.app.SessionService"):
                             with patch("xiosync.api.app.IdentityRepository"):
                                 with patch("xiosync.api.app.SystemClock"):
                                     mock_config = MagicMock()
@@ -158,7 +157,7 @@ class TestStartupLogging:
         with patch("xiosync.api.app.load_config") as mock_load:
             with patch("xiosync.api.app.create_database_engine") as mock_engine:
                 with patch("xiosync.api.app.verify_migrations_at_head") as mock_verify:
-                    with patch("xiosync.api.app.configure_logging") as mock_logging:
+                    with patch("xiosync.api.app.configure_logging"):
                         with patch("xiosync.api.app.SessionService"):
                             with patch("xiosync.api.app.IdentityRepository"):
                                 with patch("xiosync.api.app.SystemClock"):
@@ -176,7 +175,7 @@ class TestStartupLogging:
                                         create_production_app()
 
                                         # Should log environment
-                                        calls = [str(call) for call in mock_logger.info.call_args_list]
+                                        calls = [str(call) for call in mock_logger.info.call_args_list]  # noqa: E501
                                         assert any("staging" in call for call in calls)
 
     def test_startup_logs_success(self) -> None:
@@ -202,8 +201,8 @@ class TestStartupLogging:
                                         create_production_app()
 
                                         # Should log success
-                                        calls = [str(call) for call in mock_logger.info.call_args_list]
-                                        assert any("startup checks passed" in call for call in calls)
+                                        calls = [str(call) for call in mock_logger.info.call_args_list]  # noqa: E501
+                                        assert any("startup checks passed" in call for call in calls)  # noqa: E501
 
     def test_startup_logs_failure_reasons(self) -> None:
         """Startup logs helpful error messages on failure."""

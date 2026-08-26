@@ -1,0 +1,112 @@
+ℹ️  [2026-08-26T08:40:21.630Z] [db] [INFO] Opening database: /Users/karmareturns/.v0o/default/v0o.db
+🔍  [2026-08-26T08:40:21.633Z] [db] [DEBUG] Migration: updated runtime_resumability threshold to 0.25
+✅  [2026-08-26T08:40:21.633Z] [db] [SUCCESS] Database initialized
+ℹ️  [2026-08-26T08:40:21.635Z] [project-scanner] [INFO] Scanning project: /Users/karmareturns/Desktop/XIOV0
+ℹ️  [2026-08-26T08:40:21.635Z] [project-scanner] [INFO] Language: node
+ℹ️  [2026-08-26T08:40:21.803Z] [project-scanner] [INFO] Frameworks: none
+✅  [2026-08-26T08:40:21.851Z] [project-scanner] [SUCCESS] Scan complete: node, 0 frameworks, 0 migrations
+ℹ️  [2026-08-26T08:40:21.852Z] [prompt-composer] [INFO] Composed prompt: 3252 chars (5 sections)
+## TASK
+We are starting Phase 7 Step 2: Shared-store rate limiting (G-OPS-2 / M1). We need to implement a Redis-backed rate limiter that is consistent across all API replicas, configurable per environment and per route class, and we need a multi-replica limit test.
+
+## PROJECT CONTEXT
+Type: node project (no framework detected)
+
+This is a Node.js backend project. Do NOT generate React/Next.js UI code.
+Follow this project's existing conventions.
+
+Test dir: `tests`
+
+## KEY IMPORTS (use these, do not reinvent)
+```node
+import { createLogger } from '../utils/logger.mjs';
+import { V0_API } from '../utils/config.mjs';
+import * as db from './db.mjs';
+import { createParser } from 'eventsource-parser';
+import { createLogger, banner } from '../utils/logger.mjs';
+import { PATHS } from '../utils/config.mjs';
+import * as db from '../core/db.mjs';
+import { z } from 'zod';
+import { withUser, ensureInitialized, closeAll } from './core/db.mjs';
+import { selectAccountWithMinCredits, selectNextAccount } from '../core/accounts.mjs';
+```
+
+## VERIFICATION
+- No external database available in V0 sandbox.
+- Validate via: static analysis, lint, import checks.
+- Do NOT try to provision external databases (Neon, Supabase, etc.).
+
+## COMPLETED STEPS (do not redo these)
+- [x] fix: resolve feedback issues (missing messages, model rejection on continuation, sandbox pollution)
+- [x] chore: update v0-hybrid-orchestration skill with Master Agent Mandate
+- [x] fix: explicit project path search in skill mandate
+- [x] feat: add real-time telemetry and supervision mandate
+- [x] feat: convert XIOV0 to production-ready MCP server
+- [x] fix: local-path workspace injection + context-aware Q&A resolution
+- [x] feat: blueprint-grounded prompt strategy + continuity isolation
+- [x] feat: production improvements from XIOPATH_XIOSYNC orchestration session
+
+## EXISTING FILES (do not recreate these)
+```
+bin/
+  v0o.mjs
+continuity/
+  HANDOFF-LOG.md
+  SESSION-PROTOCOL.md
+  STATE.md
+data/
+  skill/
+    SKILL.md
+feedback/
+  anonymous/
+    2026-07-23_incident_06f9c7e4.json
+    2026-07-23_incident_2e6f5550.json
+    2026-07-23_incident_3fd1c241.json
+    2026-07-23_incident_65f1967d.json
+    2026-07-23_incident_a7038ff0.json
+    2026-07-23_incident_b6cdd1f7.json
+    2026-07-23_incident_ec545ee0.json
+    2026-07-24_incident_396c6028.json
+    2026-07-24_incident_72fee7c6.json
+    2026-07-24_incident_997de855.json
+    2026-07-24_incident_b83fdaf9.json
+  karma/
+    2026-07-21_bug_24fa68bd.json
+    2026-07-21_gap_141adcc8.json
+    2026-07-21_incident_173afd19.json
+    2026-07-21_incident_7ca0cba4.json
+    2026-07-21_incident_956f12b9.json
+    2026-07-22_incident_4773ba00.json
+  README.md
+src/
+  api/
+    server.mjs
+  core/
+    accounts.mjs
+    continuity.mjs
+    credit-watcher.mjs
+    db.mjs
+    delegate.mjs
+    feedback-collector.mjs
+    github.mjs
+    job-migrator.mjs
+    job-runner.mjs
+    message-analyzer.mjs
+    models.mjs
+    project-discovery.mjs
+    project-scanner.mjs
+    prompt-composer.mjs
+    question-analyzer.mjs
+    session-handoff.mjs
+    session.mjs
+    skill-sync.mjs
+    task-resolver.mjs
+    telemetry.mjs
+    v0-client.mjs
+    workspace-injector.mjs
+  interactive/
+    magic-prompts.mjs
+    session-manager.mjs
+  modes/
+... and 20 more files
+```

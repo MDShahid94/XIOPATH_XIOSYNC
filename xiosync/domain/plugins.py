@@ -86,7 +86,7 @@ ALLOWED_PROTOCOLS: frozenset[str] = frozenset({"tcp", "udp", "http", "https", "t
 #: destination. An *empty* allowlist is the way to express "deny all" — never a
 #: wildcard entry.
 FORBIDDEN_HOST_SENTINELS: frozenset[str] = frozenset(
-    {"", "*", "any", "all", "0.0.0.0", "0.0.0.0/0", "::", "::/0"}
+    {"", "*", "any", "all", "0.0.0.0", "0.0.0.0/0", "::", "::/0"}  # noqa: S104
 )
 
 
