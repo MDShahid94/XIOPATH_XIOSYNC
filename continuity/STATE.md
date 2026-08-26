@@ -1,100 +1,20 @@
 # Current Position
-- **Phase**: Phase 6 — Frontend
-- **Step**: Step 5 COMPLETE — Workers, Capabilities, Grants, Events, Memory, Orgs, Settings, Admin UI implementation. Phase 6 is complete!
-- **Next Action**: Phase 7 Step 1 (Ops hardening & release readiness).
-- **Last updated**: Phase 6 Step 5 Session
+- **Phase**: Phase 7 — Ops hardening & release readiness
+- **Step**: Step 2 IN PROGRESS — Shared-store rate limiting (G-OPS-2 / M1)
+- **Next Action**: Implement Redis-backed rate limiter; multi-replica limit test; gate G-OPS-2 closed.
+- **Last updated**: Phase 7 Step 2 Session start
 - **Orchestrator**: XIOV0 (v0-agentic-pipeline)
 
-## Phase 6 Step 5 Progress
+## Phase 7 Step 1 Progress — COMPLETE ✅
 | Component | Status |
 |-----------|--------|
-| frontend/src/features/workers — Workers UI | done |
-| frontend/src/features/capabilities — Capabilities UI | done |
-| frontend/src/features/grants — Grants UI | done |
-| frontend/src/features/events — Events UI | done |
-| frontend/src/features/memory — Memory UI | done |
-| frontend/src/features/orgs — Organizations UI | done |
-| frontend/src/features/settings — Settings UI | done |
-| frontend/src/features/admin — Admin UI | done |
-
-## Phase 6 Step 4 Progress
-| Component | Status |
-|-----------|--------|
-| frontend/src/features/workflows — Workflows React Query hooks and UI | done |
-| frontend/src/features/runs — Runs and DLQ React Query hooks and UI | done |
-
-## Phase 6 Step 3 Progress
-| Component | Status |
-|-----------|--------|
-| frontend/src/features/dashboard — Dashboard React Query hooks and UI | done |
-| frontend/src/features/plugins — Plugins React Query hooks and UI | done |
-| frontend/src/app/layout — App Layout and Navigation | done |
-
-## Phase 6 Step 2 Progress
-| Component | Status |
-|-----------|--------|
-| frontend/src/app/session — TanStack Query Auth Hooks | done |
-| frontend/src/api/queryKeys.ts — Secure cache key factory | done |
-
-## Phase 6 Step 1 Progress
-| Component | Status |
-|-----------|--------|
-| frontend/ — React + TS Vite scaffold | done |
-| frontend/src/api — Strict token store and endpoints | done |
-| frontend/src/app — Route permission matrix guards | done |
-| frontend/src/app — Route permission matrix guards | done |
-
-## Phase 5 Exit Gate Progress
-| Component | Status |
-|-----------|--------|
-| tests/integration/test_plugin_sandbox.py — Integration tests verifying plugin isolation boundaries | done |
-
-## Phase 5 Step 3 Progress
-| Component | Status |
-|-----------|--------|
-| xiosync/api/routers/plugins.py — router implementation | done |
-| pyproject.toml — importlinter whitelist updated | done |
-| tests/unit/test_api_plugins.py — 23 unit tests passing | done |
-
-## Phase 5 Step 2 Progress
-| Component | Status |
-|-----------|--------|
-| xiosync/services/plugins.py — subprocess isolation execution boundary | done |
-| tests/unit/test_plugins_services.py — 46 unit tests passing | done |
-
-## Phase 5 Step 1 Progress
-| Component | Status |
-|-----------|--------|
-| domain/plugins.py — PluginManifest, PluginInstallation, RPC schemas | done |
-| persistence/models/plugins.py — SQLAlchemy models | done |
-| migrations/0009_plugins_sandbox.py | done |
-| tests/unit/test_plugins_domain.py — 39 unit tests passing | done |
-
-## Phase 4 Step 3 Progress
-| Component | Status |
-|-----------|--------|
-| xiosync/api/routers/execution.py — POST lease/heartbeat/complete (INV-EXEC-1/2/3) | done |
-| xiosync/api/routers/dlq.py — GET + POST propose/resolve (INV-DLQ-1/2/3/4) | done |
-| xiosync/api/app.py — routers wired at /api/v1 prefix | done |
-| pyproject.toml — importlinter allowlist updated for new router→service imports | done |
-| tests/unit/test_api_execution.py — 18 unit tests covering all HTTP contracts | done |
-
-## Phase 4 Step 2 Progress
-| Component | Status |
-|-----------|--------|
-| services/workers.py — all methods implemented | done |
-| tests/integration/test_workers_integration.py — INV-WORKER-CRED-1/2, INV-TRUST-1/2 | done |
-| ruff / mypy clean | done |
-| 125 unit tests passing | done |
-
-## Phase 4 Step 1 Progress
-| Component | Status |
-|-----------|--------|
-| domain/workers.py — trust tier + enrollment predicates | done |
-| persistence/models/workers.py — WorkerEnrollment, WorkerCredential | done |
-| migrations/0008_worker_enrollment.py | done |
-| services/workers.py — stubs | done |
-| tests/unit/test_workers_domain.py | done |
+| xiosync/core/health.py — DB connectivity + migration head-gate (C6) | done |
+| xiosync/api/routers/health.py — /live + /ready endpoints (M7) | done |
+| xiosync/api/app.py — health router wired + fail-fast startup (M5) | done |
+| tests/unit/test_health.py | done |
+| tests/unit/test_health_endpoints.py | done |
+| tests/unit/test_app_startup.py | done |
+| Gates closed: M5, M7, C6 | ✅ |
 
 ## Migration Chain
 | Revision | Name | Phase |
@@ -107,3 +27,4 @@
 | 0006 | events_memory_triggers | Phase 2 |
 | 0007 | workflows_tasks_dlq | Phase 3 |
 | **0008** | **worker_enrollment** | **Phase 4** |
+| 0009 | plugins_sandbox | Phase 5 |
