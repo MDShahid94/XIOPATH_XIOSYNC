@@ -26,6 +26,7 @@ from xiosync.api.middleware import (
     RequestIDMiddleware,
     SecurityHeadersMiddleware,
 )
+from xiosync.api.middleware.cors import StrictCORSMiddleware
 from xiosync.api.middleware.rate_limit import RateLimitMiddleware
 from xiosync.api.routers.auth import router as auth_router
 from xiosync.api.routers.dlq import router as dlq_router
@@ -57,6 +58,7 @@ def create_app(
     max_body_bytes: int = DEFAULT_MAX_BODY_BYTES,
     rate_limiter: RateLimiter | None = None,
     rate_limit_config: Callable[[str], RateLimitConfig] | None = None,
+    cors_origins: list[str] | None = None,
 ) -> FastAPI:
     """Compose an app from explicit dependencies (the contract-test seam).
 
@@ -93,7 +95,10 @@ def create_app(
         )
 
     # Starlette wraps each newly-added middleware around the previous stack.
-    # Add in reverse so the effective order is request-id -> security -> size -> auth.
+    # Add in reverse so the effective order is CORS -> request-id -> security -> size -> auth.
+    # StrictCORSMiddleware is the outermost layer so preflight OPTIONS never hits auth.
+    if cors_origins:
+        application.add_middleware(StrictCORSMiddleware, allowed_origins=cors_origins)
     if rate_limiter is not None and rate_limit_config is not None:
         application.add_middleware(
             RateLimitMiddleware,
@@ -165,6 +170,7 @@ def create_production_app() -> FastAPI:
         clock=SystemClock(),
         rate_limiter=limiter,
         rate_limit_config=config_fn,
+        cors_origins=config.cors_allowed_origins,
     )
 
 

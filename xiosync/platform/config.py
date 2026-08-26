@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
 
 ENV_PREFIX = "XIOSYNC_"
@@ -32,6 +32,7 @@ _KEY_REDIS_URL = "REDIS_URL"
 _KEY_RATE_LIMIT_AUTH = "RATE_LIMIT_AUTH_LIMIT"
 _KEY_RATE_LIMIT_API = "RATE_LIMIT_API_LIMIT"
 _KEY_RATE_LIMIT_WINDOW = "RATE_LIMIT_WINDOW_SECONDS"
+_KEY_CORS_ALLOWED_ORIGINS = "CORS_ALLOWED_ORIGINS"
 
 # Signing secrets shorter than this are guessable; 32 bytes of entropy
 # rendered as text is the operational floor (doc 05 §2.2; L4 — no default).
@@ -71,6 +72,7 @@ class Config:
     rate_limit_auth_limit: int = 20
     rate_limit_api_limit: int = 100
     rate_limit_window_seconds: int = 60
+    cors_allowed_origins: list[str] = field(default_factory=list)
 
 
 def _require(env: Mapping[str, str], key: str) -> str:
@@ -143,13 +145,31 @@ def load_config(env: Mapping[str, str] | None = None) -> Config:
             raise ConfigError(f"{key} must be positive")
         return value
 
+    redis_url = source.get(_KEY_REDIS_URL, "").strip() or None
+    rate_limit_auth_limit = positive_int(_KEY_RATE_LIMIT_AUTH, 20)
+    rate_limit_api_limit = positive_int(_KEY_RATE_LIMIT_API, 100)
+    rate_limit_window_seconds = positive_int(_KEY_RATE_LIMIT_WINDOW, 60)
+
+    raw_cors = source.get(_KEY_CORS_ALLOWED_ORIGINS, "").strip()
+    cors_allowed_origins = [o.strip() for o in raw_cors.split(",") if o.strip()] if raw_cors else []
+    if "*" in cors_allowed_origins:
+        raise ConfigError(
+            "Wildcard '*' is forbidden in CORS_ALLOWED_ORIGINS (INV-CORS-1 / C4)."
+        )
+    if environment in (Environment.STAGING, Environment.PRODUCTION) and not cors_allowed_origins:
+        raise ConfigError(
+            f"CORS_ALLOWED_ORIGINS must be set in the {environment.value!r} environment "
+            "(INV-CORS-1)."
+        )
+
     return Config(
         environment=environment,
         database_url=database_url,
         log_level=log_level,
         auth_secret=auth_secret,
-        redis_url=source.get(_KEY_REDIS_URL, "").strip() or None,
-        rate_limit_auth_limit=positive_int(_KEY_RATE_LIMIT_AUTH, 20),
-        rate_limit_api_limit=positive_int(_KEY_RATE_LIMIT_API, 100),
-        rate_limit_window_seconds=positive_int(_KEY_RATE_LIMIT_WINDOW, 60),
+        redis_url=redis_url,
+        rate_limit_auth_limit=rate_limit_auth_limit,
+        rate_limit_api_limit=rate_limit_api_limit,
+        rate_limit_window_seconds=rate_limit_window_seconds,
+        cors_allowed_origins=cors_allowed_origins,
     )
